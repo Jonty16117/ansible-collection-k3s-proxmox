@@ -1,0 +1,106 @@
+---
+# defaults file for cluster_config
+# These are user-configurable defaults
+# Override in group_vars or host_vars as needed
+
+# =============================================================================
+# CLUSTER TOPOLOGY
+# =============================================================================
+# Define the size and composition of your k3s cluster
+
+k3s_cluster_topology:
+  # Control Plane nodes
+  # IMPORTANT: Must be odd numbers only (1, 3, 5, 7...)
+  # etcd requires odd number for proper quorum
+  control_plane:
+    count: 3
+    memory: 4096                # Memory in MB per node
+    disk: "4G"                  # Disk size (e.g., "4G", "10G")
+    cpu_cores: 2                # Number of vCPU cores
+    vmid_start: 500             # Starting VMID for CP nodes
+    ip_start: 210               # Starting IP octet (192.168.178.210, 211, 212...)
+    naming: "k8-cp-{id}"        # Node naming pattern
+  
+  # Worker nodes
+  # Can be 0 or more
+  workers:
+    count: 2
+    memory: 2048
+    disk: "4G"
+    cpu_cores: 2
+    vmid_start: 600             # Starting VMID for worker nodes
+    ip_start: 220               # Starting IP octet (192.168.178.220, 221, 222...)
+    naming: "k8-wk-{id}"        # Node naming pattern
+  
+  # Warning control
+  # Set to true to suppress topology warnings
+  skip_warnings: false
+
+# =============================================================================
+# NETWORK CONFIGURATION
+# =============================================================================
+k3s_network:
+  base_cidr: "192.168.178.0/24"    # Network CIDR
+  gateway: "192.168.178.1"          # Default gateway
+  bridge: "vmbr0"                   # Proxmox network bridge
+  domain: "local"                   # DNS search domain
+  dns_servers:                      # DNS servers (up to 3 for Alpine compatibility)
+    - "192.168.178.1"
+    - "1.1.1.1"
+    - "8.8.8.8"
+
+# =============================================================================
+# K3S CONFIGURATION
+# =============================================================================
+k3s_version: "v1.30.6+k3s1"
+k3s_token: "k3s-cluster-secret-token-change-in-production"
+
+# Components to disable (for Cilium compatibility)
+k3s_disable_components:
+  - "flannel"
+  - "kube-proxy"
+  - "traefik"
+  - "servicelb"
+
+# =============================================================================
+# CILIUM CONFIGURATION
+# =============================================================================
+k3s_cilium:
+  enabled: true
+  version: "1.19.2"
+  lb_pool_start: "192.168.178.240"
+  lb_pool_end: "192.168.178.249"
+  optimized: true               # Use reduced resource limits
+  hubble_enabled: true          # Enable Hubble observability
+  direct_routing: false         # Set true for same-L2 networks (disable VXLAN)
+
+# =============================================================================
+# PROXMOX CONFIGURATION
+# =============================================================================
+k3s_proxmox_template_vmid: 9600     # Source VM template ID
+k3s_proxmox_node: "pm02"            # Default Proxmox node name
+
+# =============================================================================
+# SSH CONFIGURATION
+# =============================================================================
+k3s_ssh_user: "root"
+k3s_ssh_key_path: "{{ playbook_dir }}/.ssh/id_ed25519"
+
+# =============================================================================
+# PER-NODE OVERRIDES
+# =============================================================================
+# Override specific nodes using their hostname as key
+# Example:
+# k3s_node_overrides:
+#   k8-cp-1:
+#     memory: 6144
+#     disk: "10G"
+#     cpu_cores: 4
+k3s_node_overrides: {}
+
+# =============================================================================
+# VALIDATION SETTINGS
+# =============================================================================
+k3s_validate_topology: true     # Set to false to skip validation
+k3s_max_control_plane: 9        # Maximum recommended CP nodes
+k3s_max_workers: 50             # Maximum recommended workers

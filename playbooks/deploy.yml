@@ -1,0 +1,115 @@
+---
+# deploy.yml
+# Main deployment playbook for k3s cluster on Proxmox
+# Usage: ansible-playbook -i inventory/dev/ deploy.yml
+#
+# This playbook orchestrates the full cluster deployment:
+# 1. Calculates cluster topology dynamically
+# 2. Creates VMs in Proxmox
+# 3. Prepares nodes for k3s
+# 4. Installs k3s control plane
+# 5. Joins worker nodes
+
+# =============================================================================
+# PHASE 0: Bootstrap Inventory
+# =============================================================================
+# The cluster_config role calculates node lists from topology configuration
+# and dynamically adds them to the inventory using add_host
+- name: Configure cluster inventory dynamically
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tags:
+    - always
+    - config
+    - bootstrap
+
+  roles:
+    - role: community.k3s_proxmox.cluster_config
+
+# =============================================================================
+# PHASE 1: Infrastructure (Proxmox VMs)
+# =============================================================================
+- name: Create VMs in Proxmox
+  hosts: proxmox_nodes
+  gather_facts: false
+  tags:
+    - proxmox
+    - infrastructure
+    - vms
+
+  roles:
+    - role: community.k3s_proxmox.proxmox_vm
+      when: proxmox_vm_state | default('present') == 'present'
+
+# =============================================================================
+# PHASE 2: Node Preparation
+# =============================================================================
+# Prepare all k3s nodes (control plane and workers)
+- name: Prepare nodes for k3s
+  hosts: k3s_cluster
+  become: true
+  gather_facts: true
+  tags:
+    - prepare
+    - prerequisites
+    - k3s
+
+  roles:
+    - role: community.k3s_proxmox.k3s_prerequisites
+
+# =============================================================================
+# PHASE 3: Control Plane Installation
+# =============================================================================
+- name: Install k3s control plane
+  hosts: control_plane
+  become: true
+  tags:
+    - k3s
+    - control-plane
+    - server
+
+  roles:
+    - role: community.k3s_proxmox.k3s_control_plane
+
+# =============================================================================
+# PHASE 4: Worker Nodes
+# =============================================================================
+- name: Join worker nodes
+  hosts: workers
+  become: true
+  tags:
+    - k3s
+    - workers
+    - agents
+
+  roles:
+    - role: community.k3s_proxmox.k3s_workers
+
+# =============================================================================
+# COMPLETION
+# =============================================================================
+- name: Display deployment summary
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tags:
+    - always
+
+  tasks:
+    - name: Show success message
+      ansible.builtin.debug:
+        msg:
+          - "=============================================="
+          - "K3S CLUSTER DEPLOYED SUCCESSFULLY"
+          - "=============================================="
+          - ""
+          - "Next steps:"
+          - "  1. Configure kubectl:"
+          - "     export KUBECONFIG=/path/to/kubeconfig"
+          - "  2. Verify nodes: kubectl get nodes"
+          - "  3. Check Cilium: kubectl -n kube-system get pods"
+          - ""
+          - "Run health checks:"
+          - "  ansible-playbook -i {{ inventory_dir }} health-check.yml"
+          - "=============================================="

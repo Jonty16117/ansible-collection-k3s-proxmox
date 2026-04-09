@@ -1,0 +1,23 @@
+---
+# tasks file for k3s_prerequisites - packages
+# Installs and removes packages
+
+- name: Update APK cache
+  community.general.apk:
+    update_cache: true
+  changed_when: false
+
+- name: Install required packages
+  community.general.apk:
+    name: "{{ k3s_prereq_packages }}"
+    state: present
+
+- name: Remove unnecessary packages
+  community.general.apk:
+    name: "{{ k3s_prereq_packages_remove }}"
+    state: absent
+  ignore_errors: true
+
+- name: Clean APK cache
+  ansible.builtin.command: apk cache clean
+  changed_when: true

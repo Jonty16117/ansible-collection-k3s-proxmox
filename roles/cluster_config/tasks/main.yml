@@ -1,0 +1,48 @@
+---
+# tasks file for cluster_config
+# Main entry point for cluster configuration role
+# This role calculates cluster topology and dynamically adds hosts to inventory
+
+- name: Display cluster configuration
+  ansible.builtin.debug:
+    msg:
+      - "=============================================="
+      - "CLUSTER CONFIGURATION"
+      - "=============================================="
+      - "Control Plane nodes: {{ k3s_cluster_topology.control_plane.count }}"
+      - "Worker nodes: {{ k3s_cluster_topology.workers.count }}"
+      - "Total nodes: {{ k3s_cluster_topology.control_plane.count + k3s_cluster_topology.workers.count }}"
+      - "Network: {{ k3s_network.base_cidr }}"
+      - "=============================================="
+
+- name: Include validation tasks
+  ansible.builtin.include_tasks: validate.yml
+  when: k3s_validate_topology | bool
+
+- name: Calculate control plane nodes
+  ansible.builtin.include_tasks: calculate-cp.yml
+
+- name: Calculate worker nodes
+  ansible.builtin.include_tasks: calculate-workers.yml
+
+- name: Generate warnings
+  ansible.builtin.include_tasks: warnings.yml
+
+- name: Add hosts to dynamic inventory
+  ansible.builtin.include_tasks: add-hosts.yml
+
+- name: Display configuration summary
+  ansible.builtin.debug:
+    msg:
+      - "=============================================="
+      - "INVENTORY CONFIGURED SUCCESSFULLY"
+      - "=============================================="
+      - ""
+      - "Control Plane ({{ k3s_cluster_topology.control_plane.count }} nodes):"
+      - "{% for node in _k3s_cp_nodes %}- {{ node.name }}: {{ node.ip }} (VMID: {{ node.vmid }}, {{ node.memory }}MB){% endfor %}"
+      - ""
+      - "Workers ({{ k3s_cluster_topology.workers.count }} nodes):"
+      - "{% if _k3s_worker_nodes | default([]) | length > 0 %}{% for node in _k3s_worker_nodes %}- {{ node.name }}: {{ node.ip }} (VMID: {{ node.vmid }}, {{ node.memory }}MB){% endfor %}{% else %}(none - control plane will run workloads){% endif %}"
+      - ""
+      - "Next: Run playbooks with tags to deploy specific phases"
+      - "=============================================="

@@ -1,0 +1,17 @@
+---
+# converge.yml for k3s_workers role
+# Applies the role (mock mode for testing)
+
+- name: Converge - Test k3s_workers role
+  hosts: workers
+  gather_facts: false
+  become: true
+  
+  tasks:
+    - name: Include k3s_workers role
+      ansible.builtin.include_role:
+        name: k3s_workers
+      vars:
+        # Mock k3s installation for testing
+        k3s_workers_install_path: /tmp/mock-k3s
+        k3s_workers_config_path: /tmp/mock-k3s-config

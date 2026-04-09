@@ -1,0 +1,39 @@
+---
+# Collection metadata for community.k3s_proxmox
+# Published to Ansible Galaxy for k3s cluster deployment on Proxmox
+
+namespace: community
+name: k3s_proxmox
+version: 1.0.0
+readme: README.md
+authors:
+  - FlashTrack Team
+  - Community contributors
+description: >
+  Production-ready k3s cluster deployment on Proxmox with Cilium CNI.
+  Supports dynamic inventory generation, multi-environment configurations,
+  and automated node lifecycle management.
+license:
+  - GPL-3.0-or-later
+tags:
+  - kubernetes
+  - k3s
+  - proxmox
+  - infrastructure
+  - cilium
+  - cni
+  - cluster
+dependencies:
+  community.general: ">=9.0.0"
+  ansible.utils: ">=4.0.0"
+repository: https://github.com/ansible-collections/community.k3s_proxmox
+documentation: https://github.com/ansible-collections/community.k3s_proxmox/blob/main/README.md
+homepage: https://github.com/ansible-collections/community.k3s_proxmox
+issues: https://github.com/ansible-collections/community.k3s_proxmox/issues
+build_ignore:
+  - .git
+  - .github
+  - molecule
+  - tests
+  - .tox
+  - .cache

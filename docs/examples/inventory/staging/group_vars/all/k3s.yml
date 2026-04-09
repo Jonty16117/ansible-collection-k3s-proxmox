@@ -1,0 +1,44 @@
+---
+# Staging cluster configuration
+# Production-like: 3 CP (HA), 2 workers
+
+# =============================================================================
+# CLUSTER TOPOLOGY
+# =============================================================================
+k3s_cluster_topology:
+  control_plane:
+    count: 3                    # HA control plane
+    memory: 4096
+    disk: "4G"
+    cpu_cores: 2
+  
+  workers:
+    count: 2
+    memory: 4096
+    disk: "4G"
+    cpu_cores: 2
+
+# =============================================================================
+# NETWORK CONFIGURATION
+# Use separate subnet from dev
+# =============================================================================
+k3s_network:
+  base_cidr: "192.168.179.0/24"
+  gateway: "192.168.179.1"
+  bridge: "vmbr0"
+  dns_servers:
+    - "192.168.179.1"
+    - "1.1.1.1"
+
+# =============================================================================
+# SSH CONFIGURATION
+# =============================================================================
+k3s_ssh_key_path: "{{ playbook_dir }}/../../.ssh/k8s_id_ed25519_staging"
+
+# =============================================================================
+# CILIUM CONFIGURATION
+# =============================================================================
+k3s_cilium:
+  enabled: true
+  hubble_enabled: true
+  optimized: true

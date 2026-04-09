@@ -1,0 +1,50 @@
+---
+# tasks file for proxmox_vm - destroy VMs
+# Destroys VMs in Proxmox
+
+- name: Display VMs to destroy
+  ansible.builtin.debug:
+    msg:
+      - "=============================================="
+      - "DESTROYING VMs"
+      - "=============================================="
+      - "{% for vm in _proxmox_vm_details %}- {{ vm.name }}: VMID {{ vm.vmid }}{% endfor %}"
+      - "=============================================="
+
+- name: Stop VMs
+  community.general.proxmox_kvm:
+    api_host: "{{ vault_proxmox_api_host }}"
+    api_user: "{{ vault_proxmox_api_user }}"
+    api_token_id: "{{ vault_proxmox_api_token_id }}"
+    api_token_secret: "{{ vault_proxmox_api_token_secret }}"
+    node: "{{ k3s_proxmox_node }}"
+    name: "{{ item.name }}"
+    vmid: "{{ item.vmid }}"
+    state: stopped
+    force: true
+  loop: "{{ _proxmox_vm_details }}"
+  ignore_errors: true
+  when: not proxmox_vm_dry_run | bool
+
+- name: Destroy VMs
+  community.general.proxmox_kvm:
+    api_host: "{{ vault_proxmox_api_host }}"
+    api_user: "{{ vault_proxmox_api_user }}"
+    api_token_id: "{{ vault_proxmox_api_token_id }}"
+    api_token_secret: "{{ vault_proxmox_api_token_secret }}"
+    node: "{{ k3s_proxmox_node }}"
+    name: "{{ item.name }}"
+    vmid: "{{ item.vmid }}"
+    state: absent
+    force: true
+  loop: "{{ _proxmox_vm_details }}"
+  when: not proxmox_vm_dry_run | bool
+
+- name: Display destruction summary
+  ansible.builtin.debug:
+    msg:
+      - "=============================================="
+      - "VM DESTRUCTION COMPLETE"
+      - "=============================================="
+      - "Destroyed {{ _proxmox_vm_details | length }} VMs"
+      - "=============================================="

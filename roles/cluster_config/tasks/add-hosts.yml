@@ -1,0 +1,76 @@
+---
+# tasks file for cluster_config - add hosts
+# Dynamically adds calculated nodes to Ansible inventory
+
+# =============================================================================
+# ADD CONTROL PLANE NODES
+# =============================================================================
+
+- name: Add control plane nodes to inventory
+  ansible.builtin.add_host:
+    name: "{{ item.name }}"
+    groups:
+      - k3s_cluster
+      - control_plane
+    ansible_host: "{{ item.ip }}"
+    ansible_user: "{{ k3s_ssh_user }}"
+    ansible_ssh_private_key_file: "{{ k3s_ssh_key_path }}"
+    # Node-specific variables
+    k3s_node_vmid: "{{ item.vmid }}"
+    k3s_node_memory: "{{ item.memory }}"
+    k3s_node_disk: "{{ item.disk }}"
+    k3s_node_cpu_cores: "{{ item.cpu_cores }}"
+    k3s_node_role: "{{ item.role }}"
+    k3s_is_first_node: "{{ loop.first }}"
+    # Cluster-wide variables
+    k3s_version: "{{ k3s_version }}"
+    k3s_token: "{{ k3s_token }}"
+  loop: "{{ _k3s_cp_nodes }}"
+  loop_control:
+    label: "{{ item.name }} -> {{ item.ip }}"
+
+# =============================================================================
+# ADD WORKER NODES
+# =============================================================================
+
+- name: Add worker nodes to inventory
+  ansible.builtin.add_host:
+    name: "{{ item.name }}"
+    groups:
+      - k3s_cluster
+      - workers
+    ansible_host: "{{ item.ip }}"
+    ansible_user: "{{ k3s_ssh_user }}"
+    ansible_ssh_private_key_file: "{{ k3s_ssh_key_path }}"
+    # Node-specific variables
+    k3s_node_vmid: "{{ item.vmid }}"
+    k3s_node_memory: "{{ item.memory }}"
+    k3s_node_disk: "{{ item.disk }}"
+    k3s_node_cpu_cores: "{{ item.cpu_cores }}"
+    k3s_node_role: "{{ item.role }}"
+    # Cluster-wide variables
+    k3s_version: "{{ k3s_version }}"
+    k3s_token: "{{ k3s_token }}"
+  loop: "{{ _k3s_worker_nodes }}"
+  loop_control:
+    label: "{{ item.name }} -> {{ item.ip }}"
+  when: _k3s_worker_nodes | length > 0
+
+# =============================================================================
+# VERIFY INVENTORY
+# =============================================================================
+
+- name: Verify control plane group exists
+  ansible.builtin.debug:
+    msg: "Control plane group: {{ groups['control_plane'] | default([]) | length }} nodes"
+  when: groups['control_plane'] is defined
+
+- name: Verify workers group exists
+  ansible.builtin.debug:
+    msg: "Workers group: {{ groups['workers'] | default([]) | length }} nodes"
+  when: groups['workers'] is defined
+
+- name: Verify k3s_cluster group exists
+  ansible.builtin.debug:
+    msg: "k3s_cluster group: {{ groups['k3s_cluster'] | default([]) | length }} nodes"
+  when: groups['k3s_cluster'] is defined

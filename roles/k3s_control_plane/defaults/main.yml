@@ -1,0 +1,60 @@
+---
+# defaults file for k3s_control_plane
+# Installs k3s control plane with Cilium CNI
+
+# =============================================================================
+# K3S CONFIGURATION
+# =============================================================================
+k3s_control_plane_version: "{{ k3s_version | default('v1.30.6+k3s1') }}"
+k3s_control_plane_token: "{{ k3s_token | default('k3s-cluster-secret-token') }}"
+
+# Components to disable (for Cilium compatibility)
+k3s_control_plane_disable_components:
+  - "flannel"
+  - "kube-proxy"
+  - "traefik"
+  - "servicelb"
+
+# Additional k3s server arguments
+k3s_control_plane_extra_args: ""
+
+# =============================================================================
+# CILIUM CONFIGURATION
+# =============================================================================
+k3s_cilium_enabled: true
+k3s_cilium_version: "{{ k3s_cilium.version | default('1.19.2') }}"
+k3s_cilium_namespace: "kube-system"
+
+# LoadBalancer IP pool
+k3s_cilium_lb_pool_start: "{{ k3s_cilium.lb_pool_start | default('192.168.178.240') }}"
+k3s_cilium_lb_pool_end: "{{ k3s_cilium.lb_pool_end | default('192.168.178.249') }}"
+
+# Resource optimization
+k3s_cilium_optimized: "{{ k3s_cilium.optimized | default(true) }}"
+
+# Hubble observability
+k3s_cilium_hubble_enabled: "{{ k3s_cilium.hubble_enabled | default(true) }}"
+
+# Direct routing (disable VXLAN for same-L2 networks)
+k3s_cilium_direct_routing: "{{ k3s_cilium.direct_routing | default(false) }}"
+
+# =============================================================================
+# INSTALLATION PATHS
+# =============================================================================
+k3s_control_plane_install_path: /usr/local/bin
+k3s_control_plane_config_path: /etc/rancher/k3s
+k3s_control_plane_kubeconfig: /etc/rancher/k3s/k3s.yaml
+
+# =============================================================================
+# TIMEOUTS
+# =============================================================================
+k3s_control_plane_install_timeout: 300
+k3s_control_plane_cilium_timeout: 300
+k3s_control_plane_api_timeout: 60
+
+# =============================================================================
+# NODE IDENTIFICATION
+# =============================================================================
+# These are set by cluster_config role
+k3s_is_first_node: false
+k3s_node_role: "control-plane"

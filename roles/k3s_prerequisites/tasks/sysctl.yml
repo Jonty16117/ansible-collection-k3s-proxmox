@@ -1,0 +1,24 @@
+---
+# tasks file for k3s_prerequisites - sysctl
+# Configures kernel parameters
+
+- name: Apply sysctl settings immediately
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: true
+  loop: "{{ k3s_prereq_sysctl }}"
+
+- name: Persist sysctl settings
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    sysctl_file: /etc/sysctl.d/99-k8s.conf
+    reload: false
+  loop: "{{ k3s_prereq_sysctl }}"
+
+- name: Configure zRAM (compressed swap)
+  ansible.builtin.include_tasks: zram.yml
+  when: k3s_prereq_zram_enabled | bool

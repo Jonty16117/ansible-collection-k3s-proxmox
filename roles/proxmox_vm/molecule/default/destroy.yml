@@ -1,0 +1,21 @@
+---
+# destroy.yml for proxmox_vm role
+# Cleans up test environment
+
+- name: Destroy - Cleanup test environment
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  
+  tasks:
+    - name: Remove test SSH keys
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "/tmp/test_ssh_key"
+        - "/tmp/test_ssh_key.pub"
+      
+    - name: Display cleanup complete
+      ansible.builtin.debug:
+        msg: "Test environment cleaned up successfully"

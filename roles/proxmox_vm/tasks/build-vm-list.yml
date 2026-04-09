@@ -1,0 +1,44 @@
+---
+# tasks file for proxmox_vm - build VM list
+# Builds a comprehensive list of VMs to create from inventory
+
+- name: Initialize VM list
+  ansible.builtin.set_fact:
+    _proxmox_vm_details: []
+
+- name: Build control plane VM details
+  ansible.builtin.set_fact:
+    _proxmox_vm_details: "{{ _proxmox_vm_details + [_vm_data] }}"
+  vars:
+    _hostvars: "{{ hostvars[item] }}"
+    _vm_data:
+      name: "{{ item }}"
+      vmid: "{{ _hostvars.k3s_node_vmid }}"
+      ip: "{{ _hostvars.ansible_host }}"
+      memory: "{{ _hostvars.k3s_node_memory }}"
+      disk: "{{ _hostvars.k3s_node_disk }}"
+      cpu_cores: "{{ _hostvars.k3s_node_cpu_cores }}"
+      role: "{{ _hostvars.k3s_node_role }}"
+      is_first_node: "{{ _hostvars.k3s_is_first_node | default(false) }}"
+  loop: "{{ groups['control_plane'] | default([]) }}"
+
+- name: Build worker VM details
+  ansible.builtin.set_fact:
+    _proxmox_vm_details: "{{ _proxmox_vm_details + [_vm_data] }}"
+  vars:
+    _hostvars: "{{ hostvars[item] }}"
+    _vm_data:
+      name: "{{ item }}"
+      vmid: "{{ _hostvars.k3s_node_vmid }}"
+      ip: "{{ _hostvars.ansible_host }}"
+      memory: "{{ _hostvars.k3s_node_memory }}"
+      disk: "{{ _hostvars.k3s_node_disk }}"
+      cpu_cores: "{{ _hostvars.k3s_node_cpu_cores }}"
+      role: "{{ _hostvars.k3s_node_role }}"
+  loop: "{{ groups['workers'] | default([]) }}"
+
+- name: Display VM list
+  ansible.builtin.debug:
+    msg:
+      - "VMs to {{ proxmox_vm_state }}:"
+      - "{% for vm in _proxmox_vm_details %}- {{ vm.name }}: {{ vm.ip }} (VMID: {{ vm.vmid }}, {{ vm.memory }}MB, {{ vm.role }}){% endfor %}"

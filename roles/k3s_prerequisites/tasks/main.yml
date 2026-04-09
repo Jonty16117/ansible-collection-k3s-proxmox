@@ -1,0 +1,53 @@
+---
+# tasks file for k3s_prerequisites
+# Prepares Alpine Linux nodes for k3s with Cilium
+
+- name: Display node preparation info
+  ansible.builtin.debug:
+    msg:
+      - "=============================================="
+      - "PREPARING NODE: {{ inventory_hostname }}"
+      - "=============================================="
+      - "Role: {{ k3s_node_role | default('unknown') }}"
+      - "IP: {{ ansible_host | default(inventory_hostname) }}"
+      - "=============================================="
+
+# =============================================================================
+# PACKAGE INSTALLATION
+# =============================================================================
+- name: Install required packages
+  ansible.builtin.include_tasks: packages.yml
+
+# =============================================================================
+# SERVICE OPTIMIZATION
+# =============================================================================
+- name: Configure services
+  ansible.builtin.include_tasks: services.yml
+
+# =============================================================================
+# KERNEL MODULES
+# =============================================================================
+- name: Configure kernel modules
+  ansible.builtin.include_tasks: modules.yml
+
+# =============================================================================
+# SYSCTL SETTINGS
+# =============================================================================
+- name: Configure sysctl
+  ansible.builtin.include_tasks: sysctl.yml
+
+# =============================================================================
+# BPF MOUNTS (for Cilium)
+# =============================================================================
+- name: Configure BPF mounts
+  ansible.builtin.include_tasks: bpf-mounts.yml
+
+# =============================================================================
+# COMPLETION
+# =============================================================================
+- name: Display preparation complete
+  ansible.builtin.debug:
+    msg:
+      - "=============================================="
+      - "NODE PREPARATION COMPLETE: {{ inventory_hostname }}"
+      - "=============================================="

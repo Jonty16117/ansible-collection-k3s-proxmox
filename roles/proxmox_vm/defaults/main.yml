@@ -1,0 +1,56 @@
+---
+# defaults file for proxmox_vm
+# Proxmox VM lifecycle management defaults
+
+# =============================================================================
+# VM STATE
+# =============================================================================
+# 'present' - Create/update VMs
+# 'absent'  - Destroy VMs
+proxmox_vm_state: present
+
+# =============================================================================
+# PROXMOX CONNECTION
+# =============================================================================
+# These should be overridden via vault or group_vars
+vault_proxmox_api_host: "{{ ansible_host }}"
+vault_proxmox_api_user: "root@pam"
+vault_proxmox_api_token_id: "ansible"
+vault_proxmox_api_token_secret: ""  # MUST be provided via vault
+
+# Proxmox node name (target hypervisor)
+k3s_proxmox_node: "pm02"
+
+# =============================================================================
+# VM CONFIGURATION
+# =============================================================================
+# Source template VMID to clone from
+k3s_proxmox_template_vmid: 9600
+
+# VM naming convention (populated from cluster_config role)
+k3s_node_vmid: ""          # Set dynamically by cluster_config
+k3s_node_memory: 2048      # MB RAM
+k3s_node_disk: "4G"        # Disk size
+k3s_node_cpu_cores: 2      # vCPU cores
+
+# =============================================================================
+# CLOUD-INIT CONFIGURATION
+# =============================================================================
+k3s_proxmox_cloudinit_user: "root"
+k3s_proxmox_cloudinit_ssh_key_path: "{{ k3s_ssh_key_path | default(playbook_dir + '/.ssh/id_ed25519.pub') }}"
+
+# DNS configuration for cloud-init
+k3s_proxmox_dns_servers: "{{ k3s_network.dns_servers | default(['1.1.1.1']) }}"
+
+# =============================================================================
+# VM LIFECYCLE TIMEOUTS
+# =============================================================================
+proxmox_vm_clone_timeout: 300      # Seconds to wait for clone
+proxmox_vm_start_timeout: 120      # Seconds to wait for VM start
+proxmox_ssh_timeout: 300           # Seconds to wait for SSH
+proxmox_ssh_delay: 10              # Seconds between SSH attempts
+
+# =============================================================================
+# DEBUGGING
+# =============================================================================
+proxmox_vm_dry_run: false          # Set to true for testing without real Proxmox

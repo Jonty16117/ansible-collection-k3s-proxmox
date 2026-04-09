@@ -1,0 +1,33 @@
+---
+# tasks file for proxmox_vm - wait for SSH
+# Waits for VMs to be reachable via SSH
+
+- name: Wait for SSH on {{ _vm_name }}
+  ansible.builtin.wait_for:
+    host: "{{ _vm_ip }}"
+    port: 22
+    timeout: "{{ proxmox_ssh_timeout }}"
+    delay: "{{ proxmox_ssh_delay }}"
+    state: started
+  delegate_to: localhost
+  become: false
+
+- name: Confirm SSH connectivity to {{ _vm_name }}
+  ansible.builtin.command: |
+    ssh -o ConnectTimeout=5 \
+        -o StrictHostKeyChecking=no \
+        -o UserKnownHostsFile=/dev/null \
+        -i {{ k3s_proxmox_cloudinit_ssh_key_path }} \
+        {{ k3s_proxmox_cloudinit_user }}@{{ _vm_ip }} \
+        echo "SSH OK"
+  delegate_to: localhost
+  become: false
+  changed_when: false
+  register: _ssh_test
+  until: _ssh_test.rc == 0
+  retries: 5
+  delay: 5
+
+- name: Display SSH success
+  ansible.builtin.debug:
+    msg: "✓ {{ _vm_name }} ({{ _vm_ip }}) is reachable via SSH"

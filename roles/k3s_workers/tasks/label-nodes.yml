@@ -1,0 +1,22 @@
+---
+# tasks file for k3s_workers - label nodes
+# Applies labels to worker nodes
+
+- name: Combine all labels
+  ansible.builtin.set_fact:
+    _all_labels: "{{ k3s_workers_labels + k3s_workers_extra_labels }}"
+
+- name: Apply labels to worker node
+  ansible.builtin.command: |
+    kubectl label node {{ inventory_hostname }} {{ item }} --overwrite
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  delegate_to: "{{ groups['control_plane'][0] }}"
+  become: true
+  loop: "{{ _all_labels }}"
+  changed_when: true
+  ignore_errors: true
+
+- name: Display applied labels
+  ansible.builtin.debug:
+    msg: "Applied labels: {{ _all_labels | join(', ') }}"

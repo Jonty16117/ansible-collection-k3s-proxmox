@@ -1,0 +1,19 @@
+---
+# create.yml for cluster_config role
+# Prepares the test environment
+
+- name: Create - Prepare test environment
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  
+  tasks:
+    - name: Ensure test SSH key exists
+      ansible.builtin.file:
+        path: "/tmp/test_ssh_key"
+        state: touch
+        mode: '0600'
+      
+    - name: Display test setup complete
+      ansible.builtin.debug:
+        msg: "Test environment prepared successfully"

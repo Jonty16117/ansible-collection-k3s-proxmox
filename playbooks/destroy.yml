@@ -1,0 +1,63 @@
+---
+# destroy.yml
+# Teardown playbook - destroys all VMs for an environment
+# Usage: ansible-playbook -i inventory/dev/ destroy.yml
+#
+# WARNING: This will permanently delete all VMs defined in the cluster topology.
+# Make sure you have backups of any important data.
+
+# =============================================================================
+# PHASE 0: Bootstrap Inventory
+# =============================================================================
+# Must calculate node lists so we know which VMs to destroy
+- name: Configure cluster inventory for purging
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tags:
+    - always
+    - config
+
+  roles:
+    - role: community.k3s_proxmox.cluster_config
+
+# =============================================================================
+# PHASE 1: Destroy VMs
+# =============================================================================
+- name: Destroy VMs in Proxmox
+  hosts: proxmox_nodes
+  gather_facts: false
+  tags:
+    - proxmox
+    - destroy
+    - purge
+
+  vars:
+    proxmox_vm_state: absent
+
+  roles:
+    - role: community.k3s_proxmox.proxmox_vm
+
+# =============================================================================
+# COMPLETION
+# =============================================================================
+- name: Display destruction summary
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tags:
+    - always
+
+  tasks:
+    - name: Show completion message
+      ansible.builtin.debug:
+        msg:
+          - "=============================================="
+          - "CLUSTER DESTROYED"
+          - "=============================================="
+          - ""
+          - "All VMs have been removed from Proxmox."
+          - ""
+          - "To redeploy:"
+          - "  ansible-playbook -i {{ inventory_dir }} deploy.yml"
+          - "=============================================="

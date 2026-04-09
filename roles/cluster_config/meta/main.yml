@@ -1,0 +1,21 @@
+---
+galaxy_info:
+  role_name: cluster_config
+  author: FlashTrack Team
+  description: Calculates cluster topology and dynamically generates Ansible inventory for k3s clusters
+  license: GPL-3.0-or-later
+  min_ansible_version: "2.15"
+  
+  platforms:
+    - name: GenericLinux
+      versions:
+        - all
+  
+  galaxy_tags:
+    - kubernetes
+    - k3s
+    - cluster
+    - inventory
+    - proxmox
+
+dependencies: []

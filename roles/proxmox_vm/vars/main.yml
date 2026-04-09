@@ -1,0 +1,23 @@
+---
+# vars file for proxmox_vm
+# Internal variables - not user-editable
+
+# =============================================================================
+# PROXMOX API CONFIGURATION
+# =============================================================================
+_proxmox_api_config:
+  api_host: "{{ vault_proxmox_api_host }}"
+  api_user: "{{ vault_proxmox_api_user }}"
+  api_token_id: "{{ vault_proxmox_api_token_id }}"
+  api_token_secret: "{{ vault_proxmox_api_token_secret }}"
+  node: "{{ k3s_proxmox_node }}"
+
+# =============================================================================
+# VM LIST BUILDING
+# =============================================================================
+# Build VM list from inventory groups populated by cluster_config
+_proxmox_vm_list: "{{ _proxmox_cp_vms + _proxmox_worker_vms }}"
+
+_proxmox_cp_vms: "{{ groups['control_plane'] | default([]) | map('extract', hostvars) | map(attribute='k3s_node_vmid') | list | zip(groups['control_plane'] | default([])) | map('reverse') | list | community.general.dict }}"
+
+_proxmox_worker_vms: "{{ groups['workers'] | default([]) | map('extract', hostvars) | map(attribute='k3s_node_vmid') | list | zip(groups['workers'] | default([])) | map('reverse') | list | community.general.dict }}"

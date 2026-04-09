@@ -1,0 +1,42 @@
+---
+# molecule.yml for k3s_control_plane role
+# Molecule testing configuration (mock mode)
+
+driver:
+  name: delegated
+  options:
+    managed: false
+
+platforms:
+  - name: k3s-cp-test
+
+provisioner:
+  name: ansible
+  inventory:
+    hosts:
+      all:
+        children:
+          control_plane:
+            hosts:
+              k8-cp-1:
+                ansible_host: 192.168.178.210
+                k3s_is_first_node: true
+                k3s_node_role: "control-plane"
+    group_vars:
+      all:
+        k3s_version: "v1.30.6+k3s1"
+        k3s_token: "test-token"
+        k3s_cilium:
+          enabled: false
+          version: "1.19.2"
+
+verifier:
+  name: ansible
+
+scenario:
+  test_sequence:
+    - destroy
+    - create
+    - converge
+    - verify
+    - destroy

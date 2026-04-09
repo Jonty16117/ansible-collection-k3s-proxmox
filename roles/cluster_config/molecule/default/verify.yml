@@ -1,0 +1,131 @@
+---
+# verify.yml for cluster_config role
+# Assertions to verify the role worked correctly
+
+- name: Verify - Test cluster configuration
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  
+  tasks:
+    # -------------------------------------------------------------------------
+    # Test 1: Verify control plane nodes were calculated
+    # -------------------------------------------------------------------------
+    - name: Assert control plane nodes exist
+      ansible.builtin.assert:
+        that:
+          - _k3s_cp_nodes is defined
+          - _k3s_cp_nodes | length == 1
+        fail_msg: "Control plane nodes not calculated correctly"
+        success_msg: "Control plane nodes calculated: {{ _k3s_cp_nodes | length }}"
+    
+    # -------------------------------------------------------------------------
+    # Test 2: Verify control plane node properties
+    # -------------------------------------------------------------------------
+    - name: Assert control plane node has correct properties
+      ansible.builtin.assert:
+        that:
+          - _k3s_cp_nodes[0].name == "k8-cp-1"
+          - _k3s_cp_nodes[0].ip == "192.168.178.210"
+          - _k3s_cp_nodes[0].vmid == "500"
+          - _k3s_cp_nodes[0].memory == 2048
+          - _k3s_cp_nodes[0].disk == "4G"
+          - _k3s_cp_nodes[0].cpu_cores == 2
+          - _k3s_cp_nodes[0].role == "control-plane"
+        fail_msg: "Control plane node properties incorrect"
+        success_msg: "Control plane node properties verified"
+    
+    # -------------------------------------------------------------------------
+    # Test 3: Verify worker nodes were calculated
+    # -------------------------------------------------------------------------
+    - name: Assert worker nodes exist
+      ansible.builtin.assert:
+        that:
+          - _k3s_worker_nodes is defined
+          - _k3s_worker_nodes | length == 1
+        fail_msg: "Worker nodes not calculated correctly"
+        success_msg: "Worker nodes calculated: {{ _k3s_worker_nodes | length }}"
+    
+    # -------------------------------------------------------------------------
+    # Test 4: Verify worker node properties
+    # -------------------------------------------------------------------------
+    - name: Assert worker node has correct properties
+      ansible.builtin.assert:
+        that:
+          - _k3s_worker_nodes[0].name == "k8-wk-1"
+          - _k3s_worker_nodes[0].ip == "192.168.178.220"
+          - _k3s_worker_nodes[0].vmid == "600"
+          - _k3s_worker_nodes[0].memory == 1536
+          - _k3s_worker_nodes[0].disk == "4G"
+          - _k3s_worker_nodes[0].cpu_cores == 2
+          - _k3s_worker_nodes[0].role == "worker"
+        fail_msg: "Worker node properties incorrect"
+        success_msg: "Worker node properties verified"
+    
+    # -------------------------------------------------------------------------
+    # Test 5: Verify groups were created
+    # -------------------------------------------------------------------------
+    - name: Assert control_plane group exists
+      ansible.builtin.assert:
+        that:
+          - groups['control_plane'] is defined
+          - groups['control_plane'] | length == 1
+          - "'k8-cp-1' in groups['control_plane']"
+        fail_msg: "control_plane group not created correctly"
+        success_msg: "control_plane group verified: {{ groups['control_plane'] }}"
+    
+    - name: Assert workers group exists
+      ansible.builtin.assert:
+        that:
+          - groups['workers'] is defined
+          - groups['workers'] | length == 1
+          - "'k8-wk-1' in groups['workers']"
+        fail_msg: "workers group not created correctly"
+        success_msg: "workers group verified: {{ groups['workers'] }}"
+    
+    - name: Assert k3s_cluster group exists
+      ansible.builtin.assert:
+        that:
+          - groups['k3s_cluster'] is defined
+          - groups['k3s_cluster'] | length == 2
+          - "'k8-cp-1' in groups['k3s_cluster']"
+          - "'k8-wk-1' in groups['k3s_cluster']"
+        fail_msg: "k3s_cluster group not created correctly"
+        success_msg: "k3s_cluster group verified: {{ groups['k3s_cluster'] }}"
+    
+    # -------------------------------------------------------------------------
+    # Test 6: Verify host variables were set
+    # -------------------------------------------------------------------------
+    - name: Assert CP host has correct variables
+      ansible.builtin.assert:
+        that:
+          - hostvars['k8-cp-1'].k3s_node_vmid == "500"
+          - hostvars['k8-cp-1'].k3s_node_memory == 2048
+          - hostvars['k8-cp-1'].k3s_is_first_node == true
+          - hostvars['k8-cp-1'].ansible_host == "192.168.178.210"
+        fail_msg: "CP host variables not set correctly"
+        success_msg: "CP host variables verified"
+    
+    - name: Assert worker host has correct variables
+      ansible.builtin.assert:
+        that:
+          - hostvars['k8-wk-1'].k3s_node_vmid == "600"
+          - hostvars['k8-wk-1'].k3s_node_memory == 1536
+          - hostvars['k8-wk-1'].ansible_host == "192.168.178.220"
+        fail_msg: "Worker host variables not set correctly"
+        success_msg: "Worker host variables verified"
+    
+    # -------------------------------------------------------------------------
+    # Summary
+    # -------------------------------------------------------------------------
+    - name: All tests passed
+      ansible.builtin.debug:
+        msg:
+          - "=============================================="
+          - "ALL MOLECULE TESTS PASSED"
+          - "=============================================="
+          - "✓ Control plane nodes calculated correctly"
+          - "✓ Worker nodes calculated correctly"
+          - "✓ Ansible groups created"
+          - "✓ Host variables set"
+          - "=============================================="

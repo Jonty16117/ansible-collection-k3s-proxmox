@@ -1,0 +1,37 @@
+---
+# molecule.yml for k3s_prerequisites role
+# Molecule testing configuration
+
+driver:
+  name: docker
+
+platforms:
+  - name: k3s-node-test
+    image: alpine:latest
+    command: /bin/sh
+    pre_build_image: true
+
+provisioner:
+  name: ansible
+  inventory:
+    group_vars:
+      all:
+        k3s_prereq_packages:
+          - curl
+        k3s_prereq_services_disable: []
+        k3s_prereq_modules:
+          - br_netfilter
+        k3s_prereq_sysctl:
+          - { name: "net.ipv4.ip_forward", value: "1" }
+        k3s_prereq_zram_enabled: false
+
+verifier:
+  name: ansible
+
+scenario:
+  test_sequence:
+    - destroy
+    - create
+    - converge
+    - verify
+    - destroy

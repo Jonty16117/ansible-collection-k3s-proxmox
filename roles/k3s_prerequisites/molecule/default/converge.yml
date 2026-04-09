@@ -1,0 +1,13 @@
+---
+# converge.yml for k3s_prerequisites role
+# Applies the role
+
+- name: Converge - Test k3s_prerequisites role
+  hosts: all
+  gather_facts: true
+  become: true
+  
+  tasks:
+    - name: Include k3s_prerequisites role
+      ansible.builtin.include_role:
+        name: k3s_prerequisites

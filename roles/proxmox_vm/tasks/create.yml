@@ -1,0 +1,141 @@
+---
+# tasks file for proxmox_vm - create VMs
+# Creates and configures VMs in Proxmox
+
+# =============================================================================
+# PREPARATION
+# =============================================================================
+
+- name: Configure local storage for cloud-init
+  ansible.builtin.shell: pvesm set local --content rootdir,images,backup,vztmpl,iso,snippets
+  changed_when: true
+  when: not proxmox_vm_dry_run | bool
+
+# =============================================================================
+# DESTROY EXISTING VMs (idempotent cleanup)
+# =============================================================================
+
+- name: Stop existing VMs if running
+  community.general.proxmox_kvm:
+    api_host: "{{ vault_proxmox_api_host }}"
+    api_user: "{{ vault_proxmox_api_user }}"
+    api_token_id: "{{ vault_proxmox_api_token_id }}"
+    api_token_secret: "{{ vault_proxmox_api_token_secret }}"
+    node: "{{ k3s_proxmox_node }}"
+    name: "{{ item.name }}"
+    vmid: "{{ item.vmid }}"
+    state: stopped
+    force: true
+  loop: "{{ _proxmox_vm_details }}"
+  ignore_errors: true
+  when: not proxmox_vm_dry_run | bool
+
+- name: Destroy existing VMs
+  community.general.proxmox_kvm:
+    api_host: "{{ vault_proxmox_api_host }}"
+    api_user: "{{ vault_proxmox_api_user }}"
+    api_token_id: "{{ vault_proxmox_api_token_id }}"
+    api_token_secret: "{{ vault_proxmox_api_token_secret }}"
+    node: "{{ k3s_proxmox_node }}"
+    name: "{{ item.name }}"
+    vmid: "{{ item.vmid }}"
+    state: absent
+    force: true
+  loop: "{{ _proxmox_vm_details }}"
+  when: not proxmox_vm_dry_run | bool
+
+# =============================================================================
+# CLONE VMs FROM TEMPLATE
+# =============================================================================
+
+- name: Clone VMs from template
+  community.general.proxmox_kvm:
+    api_host: "{{ vault_proxmox_api_host }}"
+    api_user: "{{ vault_proxmox_api_user }}"
+    api_token_id: "{{ vault_proxmox_api_token_id }}"
+    api_token_secret: "{{ vault_proxmox_api_token_secret }}"
+    node: "{{ k3s_proxmox_node }}"
+    name: "{{ item.name }}"
+    vmid: "{{ item.vmid }}"
+    clone: "{{ k3s_proxmox_template_vmid }}"
+    storage: "local"
+    timeout: "{{ proxmox_vm_clone_timeout }}"
+  loop: "{{ _proxmox_vm_details }}"
+  when: not proxmox_vm_dry_run | bool
+
+# =============================================================================
+# CONFIGURE CLOUD-INIT
+# =============================================================================
+
+- name: Configure VM hardware and cloud-init
+  community.general.proxmox_kvm:
+    api_host: "{{ vault_proxmox_api_host }}"
+    api_user: "{{ vault_proxmox_api_user }}"
+    api_token_id: "{{ vault_proxmox_api_token_id }}"
+    api_token_secret: "{{ vault_proxmox_api_token_secret }}"
+    node: "{{ k3s_proxmox_node }}"
+    name: "{{ item.name }}"
+    vmid: "{{ item.vmid }}"
+    memory: "{{ item.memory }}"
+    cores: "{{ item.cpu_cores }}"
+    cpu: host
+    net:
+      net0: "virtio,bridge={{ k3s_network.bridge | default('vmbr0') }}"
+    ipconfig:
+      ipconfig0: "ip={{ item.ip }}/24,gw={{ k3s_network.gateway }}"
+    ciuser: "{{ k3s_proxmox_cloudinit_user }}"
+    sshkeys: "{{ lookup('file', k3s_proxmox_cloudinit_ssh_key_path + '.pub') }}"
+    nameservers: "{{ k3s_proxmox_dns_servers | join(' ') }}"
+    update: true
+  loop: "{{ _proxmox_vm_details }}"
+  when: not proxmox_vm_dry_run | bool
+
+# =============================================================================
+# START VMs
+# =============================================================================
+
+- name: Start VMs
+  community.general.proxmox_kvm:
+    api_host: "{{ vault_proxmox_api_host }}"
+    api_user: "{{ vault_proxmox_api_user }}"
+    api_token_id: "{{ vault_proxmox_api_token_id }}"
+    api_token_secret: "{{ vault_proxmox_api_token_secret }}"
+    node: "{{ k3s_proxmox_node }}"
+    name: "{{ item.name }}"
+    vmid: "{{ item.vmid }}"
+    state: started
+  loop: "{{ _proxmox_vm_details }}"
+  when: not proxmox_vm_dry_run | bool
+
+# =============================================================================
+# WAIT FOR SSH
+# =============================================================================
+
+- name: Wait for VMs to be reachable via SSH
+  ansible.builtin.include_tasks: wait-for-ssh.yml
+  vars:
+    _vm_name: "{{ item.name }}"
+    _vm_ip: "{{ item.ip }}"
+  loop: "{{ _proxmox_vm_details }}"
+  when: not proxmox_vm_dry_run | bool
+
+# =============================================================================
+# POST-CREATION SETUP
+# =============================================================================
+
+- name: Configure DNS on VMs
+  ansible.builtin.include_tasks: configure-dns.yml
+  vars:
+    _vm_name: "{{ item.name }}"
+  loop: "{{ _proxmox_vm_details }}"
+  when: not proxmox_vm_dry_run | bool
+
+- name: Display creation summary
+  ansible.builtin.debug:
+    msg:
+      - "=============================================="
+      - "VM CREATION COMPLETE"
+      - "=============================================="
+      - "Created {{ _proxmox_vm_details | length }} VMs:"
+      - "{% for vm in _proxmox_vm_details %}- {{ vm.name }}: {{ vm.ip }} (VMID: {{ vm.vmid }}){% endfor %}"
+      - "=============================================="

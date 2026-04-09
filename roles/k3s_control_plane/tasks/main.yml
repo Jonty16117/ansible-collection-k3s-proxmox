@@ -1,0 +1,78 @@
+---
+# tasks file for k3s_control_plane
+# Installs k3s control plane with Cilium CNI
+
+- name: Display control plane installation info
+  ansible.builtin.debug:
+    msg:
+      - "=============================================="
+      - "INSTALLING K3S CONTROL PLANE"
+      - "=============================================="
+      - "Node: {{ inventory_hostname }}"
+      - "Role: {{ k3s_node_role }}"
+      - "First node: {{ k3s_is_first_node }}"
+      - "Version: {{ k3s_control_plane_version }}"
+      - "Cilium: {{ k3s_cilium_enabled }}"
+      - "=============================================="
+
+# =============================================================================
+# CHECK EXISTING INSTALLATION
+# =============================================================================
+- name: Check if k3s is already installed
+  ansible.builtin.stat:
+    path: "{{ k3s_control_plane_install_path }}/k3s"
+  register: _k3s_binary
+
+- name: Check if k3s is running
+  ansible.builtin.command: systemctl is-active k3s
+  register: _k3s_status
+  changed_when: false
+  ignore_errors: true
+
+# =============================================================================
+# INSTALL K3S
+# =============================================================================
+- name: Include first node installation
+  ansible.builtin.include_tasks: install-first.yml
+  when:
+    - k3s_is_first_node | bool
+    - not _k3s_binary.stat.exists or _k3s_status.rc != 0
+
+- name: Include HA node joining
+  ansible.builtin.include_tasks: join-ha.yml
+  when:
+    - not k3s_is_first_node | bool
+    - not _k3s_binary.stat.exists or _k3s_status.rc != 0
+
+# =============================================================================
+# INSTALL CILIUM
+# =============================================================================
+- name: Include Cilium installation
+  ansible.builtin.include_tasks: install-cilium.yml
+  when:
+    - k3s_cilium_enabled | bool
+    - k3s_is_first_node | bool
+
+# =============================================================================
+# VERIFICATION
+# =============================================================================
+- name: Wait for API server
+  ansible.builtin.uri:
+    url: "https://{{ ansible_host | default(inventory_hostname) }}:6443/healthz"
+    validate_certs: false
+    status_code: 200
+  register: _api_health
+  until: _api_health.status == 200
+  retries: 10
+  delay: 5
+  when: k3s_is_first_node | bool
+
+- name: Display installation complete
+  ansible.builtin.debug:
+    msg:
+      - "=============================================="
+      - "K3S CONTROL PLANE INSTALLED"
+      - "=============================================="
+      - "Node: {{ inventory_hostname }}"
+      - "Status: {{ 'First node (with Cilium)' if k3s_is_first_node else 'HA member' }}"
+      - "=============================================="

@@ -1,0 +1,51 @@
+---
+# Production cluster configuration
+# Full HA: 3 CP, 5 workers
+
+# =============================================================================
+# CLUSTER TOPOLOGY
+# =============================================================================
+k3s_cluster_topology:
+  control_plane:
+    count: 3                    # HA control plane
+    memory: 4096
+    disk: "4G"
+    cpu_cores: 2
+  
+  workers:
+    count: 5                    # Multiple workers for production workloads
+    memory: 4096
+    disk: "4G"
+    cpu_cores: 2
+
+# =============================================================================
+# NETWORK CONFIGURATION
+# Use separate subnet from dev/staging
+# =============================================================================
+k3s_network:
+  base_cidr: "192.168.180.0/24"
+  gateway: "192.168.180.1"
+  bridge: "vmbr0"
+  dns_servers:
+    - "192.168.180.1"
+    - "1.1.1.1"
+
+# =============================================================================
+# SSH CONFIGURATION
+# =============================================================================
+k3s_ssh_key_path: "{{ playbook_dir }}/../../.ssh/k8s_id_ed25519_prod"
+
+# =============================================================================
+# CILIUM CONFIGURATION
+# Full observability for production
+# =============================================================================
+k3s_cilium:
+  enabled: true
+  hubble_enabled: true
+  optimized: true
+  
+# =============================================================================
+# VALIDATION
+# Enable all validations for production
+# =============================================================================
+k3s_validate_topology: true

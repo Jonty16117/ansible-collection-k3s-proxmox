@@ -1,0 +1,71 @@
+---
+# molecule.yml for cluster_config role
+# Molecule testing configuration
+
+driver:
+  name: delegated
+  options:
+    managed: false
+    login_cmd_template: 'echo "Running on localhost"'
+    ansible_connection_options:
+      ansible_connection: local
+
+platforms:
+  - name: molecule-test
+    groups:
+      - localhost
+
+provisioner:
+  name: ansible
+  inventory:
+    hosts:
+      all:
+        children:
+          proxmox_nodes:
+            hosts:
+              pm02-test:
+                ansible_host: localhost
+    group_vars:
+      all:
+        # Test configuration - 1 CP, 1 worker for faster tests
+        k3s_cluster_topology:
+          control_plane:
+            count: 1
+            memory: 2048
+            disk: "4G"
+            cpu_cores: 2
+            vmid_start: 500
+            ip_start: 210
+            naming: "k8-cp-{id}"
+          workers:
+            count: 1
+            memory: 1536
+            disk: "4G"
+            cpu_cores: 2
+            vmid_start: 600
+            ip_start: 220
+            naming: "k8-wk-{id}"
+          skip_warnings: true
+        
+        k3s_network:
+          base_cidr: "192.168.178.0/24"
+          gateway: "192.168.178.1"
+          bridge: "vmbr0"
+          domain: "local"
+          dns_servers:
+            - "192.168.178.1"
+            - "1.1.1.1"
+        
+        k3s_ssh_key_path: "/tmp/test_ssh_key"
+        k3s_validate_topology: true
+
+verifier:
+  name: ansible
+
+scenario:
+  test_sequence:
+    - destroy
+    - create
+    - converge
+    - verify
+    - destroy

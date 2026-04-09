@@ -1,0 +1,35 @@
+---
+# tasks file for proxmox_vm
+# Main entry point for Proxmox VM lifecycle management
+
+- name: Display VM operation
+  ansible.builtin.debug:
+    msg:
+      - "=============================================="
+      - "PROXMOX VM OPERATION: {{ proxmox_vm_state | upper }}"
+      - "=============================================="
+      - "Target nodes:"
+      - "  Control Plane: {{ groups['control_plane'] | default([]) | length }} nodes"
+      - "  Workers: {{ groups['workers'] | default([]) | length }} nodes"
+      - "=============================================="
+
+- name: Check for required variables
+  ansible.builtin.fail:
+    msg: |
+      ERROR: Required variable not set: {{ item }}
+      Please ensure cluster_config role ran first or set manually.
+  when: vars[item] is not defined or vars[item] == ""
+  loop:
+    - vault_proxmox_api_token_secret
+  no_log: true
+
+- name: Build VM list from inventory
+  ansible.builtin.include_tasks: build-vm-list.yml
+
+- name: Include create tasks
+  ansible.builtin.include_tasks: create.yml
+  when: proxmox_vm_state == 'present'
+
+- name: Include destroy tasks
+  ansible.builtin.include_tasks: destroy.yml
+  when: proxmox_vm_state == 'absent'

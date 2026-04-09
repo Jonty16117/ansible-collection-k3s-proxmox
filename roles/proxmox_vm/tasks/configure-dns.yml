@@ -1,0 +1,27 @@
+---
+# tasks file for proxmox_vm - configure DNS
+# Configures DNS on VMs after creation (Alpine Linux compatibility)
+
+- name: Create /etc/resolv.conf on {{ _vm_name }}
+  ansible.builtin.template:
+    src: resolv.conf.j2
+    dest: /etc/resolv.conf
+    mode: '0644'
+  delegate_to: "{{ _vm_name }}"
+  become: true
+  vars:
+    ansible_host: "{{ hostvars[_vm_name].ansible_host }}"
+    ansible_user: "{{ k3s_proxmox_cloudinit_user }}"
+    ansible_ssh_private_key_file: "{{ k3s_proxmox_cloudinit_ssh_key_path }}"
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+
+- name: Verify DNS resolution on {{ _vm_name }}
+  ansible.builtin.command: nslookup google.com
+  delegate_to: "{{ _vm_name }}"
+  become: true
+  changed_when: false
+  vars:
+    ansible_host: "{{ hostvars[_vm_name].ansible_host }}"
+    ansible_user: "{{ k3s_proxmox_cloudinit_user }}"
+    ansible_ssh_private_key_file: "{{ k3s_proxmox_cloudinit_ssh_key_path }}"
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"

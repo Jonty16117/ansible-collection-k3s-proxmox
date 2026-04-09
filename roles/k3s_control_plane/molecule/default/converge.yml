@@ -1,0 +1,17 @@
+---
+# converge.yml for k3s_control_plane role
+# Applies the role (mock mode for testing)
+
+- name: Converge - Test k3s_control_plane role
+  hosts: control_plane
+  gather_facts: false
+  become: true
+  
+  tasks:
+    - name: Include k3s_control_plane role
+      ansible.builtin.include_role:
+        name: k3s_control_plane
+      vars:
+        # Mock k3s installation for testing
+        k3s_control_plane_install_path: /tmp/mock-k3s
+        k3s_control_plane_config_path: /tmp/mock-k3s-config

@@ -1,0 +1,67 @@
+---
+# tasks file for k3s_workers
+# Joins worker nodes to the k3s cluster
+
+- name: Display worker join info
+  ansible.builtin.debug:
+    msg:
+      - "=============================================="
+      - "JOINING WORKER NODE"
+      - "=============================================="
+      - "Node: {{ inventory_hostname }}"
+      - "Version: {{ k3s_workers_version }}"
+      - "=============================================="
+
+# =============================================================================
+# CHECK EXISTING INSTALLATION
+# =============================================================================
+- name: Check if k3s is already installed
+  ansible.builtin.stat:
+    path: "{{ k3s_workers_install_path }}/k3s"
+  register: _k3s_binary
+
+- name: Check if k3s is running
+  ansible.builtin.command: systemctl is-active k3s-agent
+  register: _k3s_status
+  changed_when: false
+  ignore_errors: true
+
+# =============================================================================
+# JOIN CLUSTER
+# =============================================================================
+- name: Include join tasks
+  ansible.builtin.include_tasks: join.yml
+  when:
+    - not _k3s_binary.stat.exists or _k3s_status.rc != 0
+
+# =============================================================================
+# LABEL NODES
+# =============================================================================
+- name: Include label tasks
+  ansible.builtin.include_tasks: label-nodes.yml
+
+# =============================================================================
+# VERIFICATION
+# =============================================================================
+- name: Verify worker is ready
+  ansible.builtin.command: |
+    kubectl get node {{ inventory_hostname }} -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  delegate_to: "{{ groups['control_plane'][0] }}"
+  become: true
+  register: _worker_ready
+  until: _worker_ready.stdout == "True"
+  retries: 10
+  delay: 5
+  changed_when: false
+
+- name: Display join complete
+  ansible.builtin.debug:
+    msg:
+      - "=============================================="
+      - "WORKER NODE JOINED"
+      - "=============================================="
+      - "Node: {{ inventory_hostname }}"
+      - "Status: Ready"
+      - "=============================================="

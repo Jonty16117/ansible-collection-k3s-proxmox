@@ -1,0 +1,13 @@
+---
+# create.yml for k3s_control_plane role
+# Prepares test environment
+
+- name: Create - Prepare test environment
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  
+  tasks:
+    - name: Display test setup complete
+      ansible.builtin.debug:
+        msg: "Test environment prepared for k3s_control_plane role"

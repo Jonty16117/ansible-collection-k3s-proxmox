@@ -1,0 +1,16 @@
+---
+# Example per-node override configuration
+# Place this file in inventory/<env>/host_vars/k8-cp-1.yml
+# to override defaults for a specific node
+
+# Override memory for this specific node
+k3s_node_memory: 6144
+
+# Override disk size
+k3s_node_disk: "10G"
+
+# Override CPU cores
+k3s_node_cpu_cores: 4
+
+# Note: These variables are consumed by the cluster_config role
+# and applied to the specific node during inventory generation

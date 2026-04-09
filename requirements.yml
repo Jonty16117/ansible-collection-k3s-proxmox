@@ -1,0 +1,12 @@
+---
+# External dependencies for community.k3s_proxmox collection
+# Install with: ansible-galaxy collection install -r requirements.yml
+
+collections:
+  - name: community.general
+    version: ">=9.0.0"
+    source: https://galaxy.ansible.com
+    
+  - name: ansible.utils
+    version: ">=4.0.0"
+    source: https://galaxy.ansible.com

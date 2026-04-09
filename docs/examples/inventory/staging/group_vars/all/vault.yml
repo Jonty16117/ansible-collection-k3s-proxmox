@@ -1,0 +1,8 @@
+---
+# Staging environment secrets
+# ENCRYPT THIS FILE: ansible-vault encrypt vault.yml
+#
+# vault_proxmox_api_host: pm02-staging
+# vault_proxmox_api_user: root@pam
+# vault_proxmox_api_token_id: ansible
+# vault_proxmox_api_token_secret: "your-staging-token-here"

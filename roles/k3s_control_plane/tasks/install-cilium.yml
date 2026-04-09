@@ -1,0 +1,65 @@
+---
+# tasks file for k3s_control_plane - install Cilium
+# Installs Cilium CNI on the first control plane node
+
+- name: Check if Cilium is already installed
+  ansible.builtin.command: |
+    kubectl get pods -n {{ k3s_cilium_namespace }} -l k8s-app=cilium -o jsonpath='{.items[0].status.phase}'
+  environment:
+    KUBECONFIG: "{{ k3s_control_plane_kubeconfig }}"
+  register: _cilium_check
+  changed_when: false
+  ignore_errors: true
+
+- name: Install Cilium CLI
+  ansible.builtin.shell: |
+    CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt)
+    CLI_ARCH=amd64
+    if [ "$(uname -m)" = "aarch64" ]; then CLI_ARCH=arm64; fi
+    curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI_VERSION}/cilium-linux-${CLI_ARCH}.tar.gz
+    tar xzvfC cilium-linux-${CLI_ARCH}.tar.gz /usr/local/bin
+    rm cilium-linux-${CLI_ARCH}.tar.gz
+  args:
+    creates: /usr/local/bin/cilium
+  when: _cilium_check.rc != 0 or _cilium_check.stdout != "Running"
+
+- name: Generate Cilium values
+  ansible.builtin.template:
+    src: cilium-values.yaml.j2
+    dest: /tmp/cilium-values.yaml
+    mode: '0600'
+  when: _cilium_check.rc != 0 or _cilium_check.stdout != "Running"
+
+- name: Install Cilium
+  ansible.builtin.shell: |
+    cilium install \
+      --version {{ k3s_cilium_version }} \
+      --namespace {{ k3s_cilium_namespace }} \
+      --values /tmp/cilium-values.yaml \
+      --wait
+  environment:
+    KUBECONFIG: "{{ k3s_control_plane_kubeconfig }}"
+  when: _cilium_check.rc != 0 or _cilium_check.stdout != "Running"
+  timeout: "{{ k3s_control_plane_cilium_timeout }}"
+
+- name: Wait for Cilium pods
+  ansible.builtin.command: |
+    kubectl wait --for=condition=ready pod -l k8s-app=cilium \
+      -n {{ k3s_cilium_namespace }} --timeout=300s
+  environment:
+    KUBECONFIG: "{{ k3s_control_plane_kubeconfig }}"
+  when: _cilium_check.rc != 0 or _cilium_check.stdout != "Running"
+  changed_when: false
+
+- name: Display Cilium status
+  ansible.builtin.command: cilium status
+  environment:
+    KUBECONFIG: "{{ k3s_control_plane_kubeconfig }}"
+  register: _cilium_status
+  changed_when: false
+  ignore_errors: true
+
+- name: Show Cilium status
+  ansible.builtin.debug:
+    var: _cilium_status.stdout_lines
+    verbosity: 0

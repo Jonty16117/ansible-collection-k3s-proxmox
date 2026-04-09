@@ -1,0 +1,16 @@
+---
+# Runtime metadata for community.k3s_proxmox collection
+# Defines minimum Ansible version and plugin routing
+
+requires_ansible: ">=2.15.0"
+
+action_groups:
+  k3s_proxmox:
+    - community.general.proxmox_kvm
+    - community.general.proxmox
+    - ansible.utils.ipaddr
+    - ansible.builtin.add_host
+
+plugin_routing:
+  modules: {}
+  action: {}

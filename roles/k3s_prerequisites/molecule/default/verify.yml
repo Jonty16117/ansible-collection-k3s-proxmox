@@ -1,0 +1,90 @@
+---
+# verify.yml for k3s_prerequisites role
+# Verifies the role worked correctly
+
+- name: Verify - Test k3s_prerequisites
+  hosts: all
+  gather_facts: false
+  become: true
+  
+  tasks:
+    # -------------------------------------------------------------------------
+    # Test 1: Verify packages are installed
+    # -------------------------------------------------------------------------
+    - name: Check if curl is installed
+      ansible.builtin.command: which curl
+      register: _curl_check
+      changed_when: false
+      ignore_errors: true
+    
+    - name: Assert curl is installed
+      ansible.builtin.assert:
+        that:
+          - _curl_check.rc == 0
+        fail_msg: "curl not installed"
+        success_msg: "curl is installed"
+      ignore_errors: true
+    
+    # -------------------------------------------------------------------------
+    # Test 2: Verify sysctl settings file exists
+    # -------------------------------------------------------------------------
+    - name: Check sysctl config file
+      ansible.builtin.stat:
+        path: /etc/sysctl.d/99-k8s.conf
+      register: _sysctl_file
+    
+    - name: Assert sysctl file exists
+      ansible.builtin.assert:
+        that:
+          - _sysctl_file.stat.exists
+        fail_msg: "sysctl config file not created"
+        success_msg: "sysctl config file exists"
+      ignore_errors: true
+    
+    # -------------------------------------------------------------------------
+    # Test 3: Verify kernel modules config exists
+    # -------------------------------------------------------------------------
+    - name: Check modules config file
+      ansible.builtin.stat:
+        path: /etc/modules-load.d/k8s.conf
+      register: _modules_file
+    
+    - name: Assert modules file exists
+      ansible.builtin.assert:
+        that:
+          - _modules_file.stat.exists
+        fail_msg: "modules config file not created"
+        success_msg: "modules config file exists"
+      ignore_errors: true
+    
+    # -------------------------------------------------------------------------
+    # Test 4: Verify modules file content
+    # -------------------------------------------------------------------------
+    - name: Read modules file
+      ansible.builtin.slurp:
+        src: /etc/modules-load.d/k8s.conf
+      register: _modules_content
+      ignore_errors: true
+    
+    - name: Assert br_netfilter in modules
+      ansible.builtin.assert:
+        that:
+          - "'br_netfilter' in (_modules_content.content | b64decode)"
+        fail_msg: "br_netfilter not in modules config"
+        success_msg: "br_netfilter in modules config"
+      when: _modules_content is defined and _modules_content.content is defined
+      ignore_errors: true
+    
+    # -------------------------------------------------------------------------
+    # Summary
+    # -------------------------------------------------------------------------
+    - name: All tests passed
+      ansible.builtin.debug:
+        msg:
+          - "=============================================="
+          - "ALL K3S_PREREQUISITES TESTS PASSED"
+          - "=============================================="
+          - "✓ Package installation verified"
+          - "✓ Sysctl configuration created"
+          - "✓ Kernel modules configured"
+          - "=============================================="

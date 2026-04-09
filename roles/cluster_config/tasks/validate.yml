@@ -1,0 +1,77 @@
+---
+# tasks file for cluster_config - validation
+# Validates cluster topology configuration
+
+- name: Validate control plane count is defined
+  ansible.builtin.fail:
+    msg: |
+      ERROR: k3s_cluster_topology.control_plane.count is not defined
+      Please define the number of control plane nodes in your group_vars
+  when: k3s_cluster_topology.control_plane.count is not defined
+
+- name: Validate control plane count is odd
+  ansible.builtin.fail:
+    msg: |
+      ERROR: Control plane count must be odd (1, 3, 5, 7...)
+      You specified: {{ k3s_cluster_topology.control_plane.count }}
+      
+      etcd requires an odd number of nodes for proper quorum.
+      Even numbers (2, 4, 6...) do not improve fault tolerance.
+      
+      Please change k3s_cluster_topology.control_plane.count to an odd number.
+  when: k3s_cluster_topology.control_plane.count | int % 2 == 0
+
+- name: Validate control plane count is positive
+  ansible.builtin.fail:
+    msg: |
+      ERROR: Control plane count must be at least 1
+      You specified: {{ k3s_cluster_topology.control_plane.count }}
+  when: k3s_cluster_topology.control_plane.count | int < 1
+
+- name: Validate control plane count is reasonable
+  ansible.builtin.fail:
+    msg: |
+      ERROR: Control plane count {{ k3s_cluster_topology.control_plane.count }} exceeds maximum of {{ k3s_max_control_plane }}
+      Most clusters only need 3 or 5 control plane nodes.
+  when: k3s_cluster_topology.control_plane.count | int > k3s_max_control_plane | int
+
+- name: Validate worker count is defined
+  ansible.builtin.fail:
+    msg: |
+      ERROR: k3s_cluster_topology.workers.count is not defined
+      Please define the number of worker nodes in your group_vars
+  when: k3s_cluster_topology.workers.count is not defined
+
+- name: Validate worker count is non-negative
+  ansible.builtin.fail:
+    msg: |
+      ERROR: Worker count must be 0 or greater
+      You specified: {{ k3s_cluster_topology.workers.count }}
+  when: k3s_cluster_topology.workers.count | int < 0
+
+- name: Validate worker count is reasonable
+  ansible.builtin.fail:
+    msg: |
+      ERROR: Worker count {{ k3s_cluster_topology.workers.count }} exceeds maximum of {{ k3s_max_workers }}
+      For large clusters, consider multiple clusters or external worker management.
+  when: k3s_cluster_topology.workers.count | int > k3s_max_workers | int
+
+- name: Validate network CIDR format
+  ansible.builtin.fail:
+    msg: |
+      ERROR: Invalid network CIDR format: {{ k3s_network.base_cidr }}
+      Expected format: 192.168.178.0/24
+  when: k3s_network.base_cidr | ansible.utils.ipaddr('network') is not defined
+
+- name: Validate gateway is in network
+  ansible.builtin.fail:
+    msg: |
+      ERROR: Gateway {{ k3s_network.gateway }} is not in network {{ k3s_network.base_cidr }}
+  when: k3s_network.gateway | ansible.utils.ipaddr(k3s_network.base_cidr) is not defined
+
+- name: Validate DNS servers are provided
+  ansible.builtin.fail:
+    msg: |
+      ERROR: At least one DNS server must be configured
+      k3s_network.dns_servers is empty or undefined
+  when: k3s_network.dns_servers | default([]) | length == 0

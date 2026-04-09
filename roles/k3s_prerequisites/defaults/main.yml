@@ -1,0 +1,76 @@
+---
+# defaults file for k3s_prerequisites
+# Prepares Alpine Linux nodes for k3s installation
+
+# =============================================================================
+# PACKAGES
+# =============================================================================
+# Required packages for k3s
+k3s_prereq_packages:
+  - curl                    # For downloading k3s
+  - qemu-guest-agent        # Proxmox integration
+  - zram-init              # Compressed RAM swap
+
+# Packages to remove (unnecessary for k8s nodes)
+k3s_prereq_packages_remove:
+  - busybox-extras         # Not needed in containers/VMs
+  # - openssh-sftp-server  # Cannot remove separately in Alpine
+
+# =============================================================================
+# SERVICES
+# =============================================================================
+# Services to disable (save resources)
+k3s_prereq_services_disable:
+  - crond
+  - syslog
+
+# Service to enable
+k3s_prereq_services_enable:
+  - qemu-guest-agent
+
+# =============================================================================
+# KERNEL MODULES
+# =============================================================================
+# Required for Cilium eBPF
+k3s_prereq_modules:
+  # BPF for Cilium
+  - bpf
+  # Kubernetes networking
+  - br_netfilter
+  - overlay
+  # Additional networking
+  - vxlan
+
+# =============================================================================
+# SYSCTL SETTINGS
+# =============================================================================
+k3s_prereq_sysctl:
+  # IP forwarding
+  - { name: "net.ipv4.ip_forward", value: "1" }
+  - { name: "net.ipv6.conf.all.forwarding", value: "1" }
+  # Bridge networking
+  - { name: "net.bridge.bridge-nf-call-iptables", value: "1" }
+  - { name: "net.bridge.bridge-nf-call-ip6tables", value: "1" }
+  # Memory optimization
+  - { name: "vm.swappiness", value: "10" }
+  - { name: "vm.vfs_cache_pressure", value: "50" }
+  # Network tuning
+  - { name: "net.core.somaxconn", value: "32768" }
+  - { name: "net.ipv4.tcp_max_syn_backlog", value: "8096" }
+
+# =============================================================================
+# zRAM CONFIGURATION
+# =============================================================================
+k3s_prereq_zram_enabled: true
+k3s_prereq_zram_size: "50%"      # Percentage of RAM to use for zram
+
+# =============================================================================
+# BPF MOUNT
+# =============================================================================
+k3s_prereq_bpf_mount: /sys/fs/bpf
+
+# =============================================================================
+# TIMEOUTS
+# =============================================================================
+k3s_prereq_ssh_timeout: 300
+k3s_prereq_ssh_delay: 5
