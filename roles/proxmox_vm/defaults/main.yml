@@ -27,12 +27,6 @@ k3s_proxmox_node: "pm02"
 # Source template VMID to clone from
 k3s_proxmox_template_vmid: 9600
 
-# VM naming convention (populated from cluster_config role)
-k3s_node_vmid: ""          # Set dynamically by cluster_config
-k3s_node_memory: 2048      # MB RAM
-k3s_node_disk: "4G"        # Disk size
-k3s_node_cpu_cores: 2      # vCPU cores
-
 # =============================================================================
 # CLOUD-INIT CONFIGURATION
 # =============================================================================
@@ -46,7 +40,6 @@ k3s_proxmox_dns_servers: "{{ k3s_network.dns_servers | default(['1.1.1.1']) }}"
 # VM LIFECYCLE TIMEOUTS
 # =============================================================================
 proxmox_vm_clone_timeout: 300      # Seconds to wait for clone
-proxmox_vm_start_timeout: 120      # Seconds to wait for VM start
 proxmox_ssh_timeout: 300           # Seconds to wait for SSH
 proxmox_ssh_delay: 10              # Seconds between SSH attempts
 

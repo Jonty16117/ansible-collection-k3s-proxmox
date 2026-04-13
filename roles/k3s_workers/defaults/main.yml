@@ -17,7 +17,6 @@ k3s_workers_config_path: /etc/rancher/k3s
 # TIMEOUTS
 # =============================================================================
 k3s_workers_install_timeout: 300
-k3s_workers_join_timeout: 300
 
 # =============================================================================
 # NODE LABELS
@@ -25,9 +24,3 @@ k3s_workers_join_timeout: 300
 # Note: node-role.kubernetes.io/worker=true is added automatically by k3s
 # Additional custom labels (user-defined)
 k3s_workers_extra_labels: []
-
-# =============================================================================
-# TAINTS
-# =============================================================================
-# No taints by default (workers run workloads)
-k3s_workers_taints: []

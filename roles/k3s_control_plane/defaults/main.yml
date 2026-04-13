@@ -58,14 +58,12 @@ k3s_control_plane_kubeconfig: /etc/rancher/k3s/k3s.yaml
 # TIMEOUTS
 # =============================================================================
 k3s_control_plane_install_timeout: 600
-k3s_control_plane_api_timeout: 180
 
 # =============================================================================
 # NODE IDENTIFICATION
 # =============================================================================
 # These are set by cluster_config role
 k3s_is_first_node: false
-k3s_node_role: "control-plane"
 
 # =============================================================================
 # KUBECONFIG
