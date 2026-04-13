@@ -71,6 +71,19 @@
     - k3s_cilium_enabled | bool
     - k3s_is_first_node | bool
 
+- name: Rename kubeconfig context to cluster name
+  when:
+    - k3s_cluster_name | length > 0
+    - k3s_is_first_node | bool
+  ansible.builtin.shell: |
+    CURRENT_CONTEXT=$(kubectl config current-context)
+    if [ "$CURRENT_CONTEXT" != "{{ k3s_cluster_name }}" ]; then
+      kubectl config rename-context "$CURRENT_CONTEXT" {{ k3s_cluster_name }}
+    fi
+  environment:
+    KUBECONFIG: "{{ k3s_control_plane_kubeconfig }}"
+  changed_when: false
+
 - name: Fetch kubeconfig to local machine
   when:
     - k3s_is_first_node | bool
