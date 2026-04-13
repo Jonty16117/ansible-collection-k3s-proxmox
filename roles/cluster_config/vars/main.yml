@@ -1,38 +1,6 @@
 ---
 # vars file for cluster_config
 # These are internal variables - NOT user-editable
-# They are calculated from defaults/main.yml and user overrides
 
-# =============================================================================
-# CALCULATED NETWORK VALUES
-# =============================================================================
-
-# Extract base network octets for IP calculation
-_k3s_network_base_octets: "{{ k3s_network.base_cidr | ansible.utils.ipaddr('address') }}"
-_k3s_network_prefix: "{{ _k3s_network_base_octets | regex_replace('^(\\d+\\.\\d+\\.)(\\d+)\\.(\\d+)$', '\\1') }}"
-_k3s_network_third_octet: "{{ _k3s_network_base_octets | regex_replace('^(\\d+\\.\\d+\\.)(\\d+)\\.(\\d+)$', '\\2') }}"
-
-# =============================================================================
-# CONTROL PLANE CALCULATED VALUES
-# =============================================================================
-
-_k3s_cp_vmid_start: "{{ k3s_cluster_topology.control_plane.vmid_start }}"
-_k3s_cp_ip_start: "{{ k3s_cluster_topology.control_plane.ip_start }}"
-_k3s_cp_count: "{{ k3s_cluster_topology.control_plane.count }}"
-_k3s_cp_naming: "{{ k3s_cluster_topology.control_plane.naming }}"
-
-# =============================================================================
-# WORKER CALCULATED VALUES
-# =============================================================================
-
-_k3s_worker_vmid_start: "{{ k3s_cluster_topology.workers.vmid_start }}"
-_k3s_worker_ip_start: "{{ k3s_cluster_topology.workers.ip_start }}"
-_k3s_worker_count: "{{ k3s_cluster_topology.workers.count }}"
-_k3s_worker_naming: "{{ k3s_cluster_topology.workers.naming }}"
-
-# =============================================================================
-# NAMING PATTERNS
-# =============================================================================
-
-# These patterns are used to generate node names
-# {id} is replaced with the node number (1, 2, 3...)
+# Note: Network prefix variables (_k3s_network_prefix, _k3s_network_third_octet)
+# are now calculated in tasks/main.yml to avoid ansible.utils.ipaddr issues

@@ -30,6 +30,7 @@
 # =============================================================================
 # PHASE 1: Infrastructure (Proxmox VMs)
 # =============================================================================
+# VMs are skipped if already running. Use --tags force to force reprovision.
 - name: Create VMs in Proxmox
   hosts: proxmox_nodes
   gather_facts: false
@@ -37,6 +38,7 @@
     - proxmox
     - infrastructure
     - vms
+    - force
 
   roles:
     - role: community.k3s_proxmox.proxmox_vm
@@ -87,6 +89,40 @@
     - role: community.k3s_proxmox.k3s_workers
 
 # =============================================================================
+# KUBECONFIGURATION
+# =============================================================================
+- name: Fetch and configure kubeconfig
+  hosts: control_plane
+  gather_facts: false
+  tags:
+    - always
+    - kubeconfig
+
+  tasks:
+    - name: Fetch kubeconfig from first control plane
+      when: k3s_is_first_node | default(false)
+      ansible.builtin.fetch:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: "{{ k3s_cluster_kubeconfig_save_path }}"
+        flat: true
+        validate_checksum: true
+
+    - name: Set cluster name in kubeconfig
+      when:
+        - k3s_cluster_name is defined
+        - k3s_cluster_name | length > 0
+        - k3s_is_first_node | default(false)
+      ansible.builtin.shell:
+        cmd: |
+          if kubectl config get-contexts default | grep -q "default"; then
+            kubectl config rename-context default {{ k3s_cluster_name }}
+          else
+            echo "Context 'default' not found, skipping rename"
+          fi
+        executable: /bin/sh
+      changed_when: false
+
+# =============================================================================
 # COMPLETION
 # =============================================================================
 - name: Display deployment summary
@@ -106,10 +142,10 @@
           - ""
           - "Next steps:"
           - "  1. Configure kubectl:"
-          - "     export KUBECONFIG=/path/to/kubeconfig"
+          - "     export KUBECONFIG={{ k3s_cluster_kubeconfig_save_path }}"
           - "  2. Verify nodes: kubectl get nodes"
           - "  3. Check Cilium: kubectl -n kube-system get pods"
           - ""
           - "Run health checks:"
-          - "  ansible-playbook -i {{ inventory_dir }} health-check.yml"
+          - "  ansible-playbook -i inventory.yml health-check.yml"
           - "=============================================="

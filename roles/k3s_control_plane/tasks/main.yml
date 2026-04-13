@@ -2,77 +2,90 @@
 # tasks file for k3s_control_plane
 # Installs k3s control plane with Cilium CNI
 
-- name: Display control plane installation info
-  ansible.builtin.debug:
-    msg:
-      - "=============================================="
-      - "INSTALLING K3S CONTROL PLANE"
-      - "=============================================="
-      - "Node: {{ inventory_hostname }}"
-      - "Role: {{ k3s_node_role }}"
-      - "First node: {{ k3s_is_first_node }}"
-      - "Version: {{ k3s_control_plane_version }}"
-      - "Cilium: {{ k3s_cilium_enabled }}"
-      - "=============================================="
-
-# =============================================================================
-# CHECK EXISTING INSTALLATION
-# =============================================================================
-- name: Check if k3s is already installed
+- name: Check if k3s is installed
   ansible.builtin.stat:
     path: "{{ k3s_control_plane_install_path }}/k3s"
   register: _k3s_binary
 
 - name: Check if k3s is running
-  ansible.builtin.command: systemctl is-active k3s
+  ansible.builtin.shell: |
+    if command -v systemctl &> /dev/null; then
+      systemctl is-active k3s || echo "inactive"
+    elif command -v rc-service &> /dev/null; then
+      rc-service k3s status 2>/dev/null || echo "inactive"
+    else
+      pgrep -x k3s > /dev/null && echo "active" || echo "inactive"
+    fi
   register: _k3s_status
   changed_when: false
-  ignore_errors: true
 
-# =============================================================================
-# INSTALL K3S
-# =============================================================================
-- name: Include first node installation
-  ansible.builtin.include_tasks: install-first.yml
+- name: Install k3s server
+  ansible.builtin.include_tasks: install-k3s-server.yml
+  when: not _k3s_binary.stat.exists or _k3s_status.stdout != "active"
+
+- name: Ensure k3s is running
+  ansible.builtin.service:
+    name: k3s
+    state: started
+    enabled: true
   when:
-    - k3s_is_first_node | bool
-    - not _k3s_binary.stat.exists or _k3s_status.rc != 0
+    - _k3s_binary.stat.exists
+    - _k3s_status.stdout != "active"
 
-- name: Include HA node joining
-  ansible.builtin.include_tasks: join-ha.yml
+- name: Verify k3s API
+  ansible.builtin.shell: |
+    kubectl get --raw='/healthz?verbose' || exit 1
+  environment:
+    KUBECONFIG: "{{ k3s_control_plane_kubeconfig }}"
+  register: _api_check
+  failed_when: false
+  changed_when: false
   when:
-    - not k3s_is_first_node | bool
-    - not _k3s_binary.stat.exists or _k3s_status.rc != 0
+    - _k3s_binary.stat.exists
+    - _k3s_status.stdout == "active"
 
-# =============================================================================
-# INSTALL CILIUM
-# =============================================================================
-- name: Include Cilium installation
+- name: Restart k3s if API unreachable
+  ansible.builtin.service:
+    name: k3s
+    state: restarted
+  when:
+    - _k3s_binary.stat.exists
+    - _k3s_status.stdout == "active"
+    - _api_check.rc != 0
+
+- name: Wait for API server
+  ansible.builtin.shell: |
+    kubectl get --raw='/healthz?verbose'
+  environment:
+    KUBECONFIG: "{{ k3s_control_plane_kubeconfig }}"
+  register: _api_health
+  until: _api_health.rc == 0
+  retries: 30
+  delay: 10
+  changed_when: false
+  when: k3s_is_first_node | bool
+
+- name: Install Cilium
   ansible.builtin.include_tasks: install-cilium.yml
   when:
     - k3s_cilium_enabled | bool
     - k3s_is_first_node | bool
 
-# =============================================================================
-# VERIFICATION
-# =============================================================================
-- name: Wait for API server
-  ansible.builtin.uri:
-    url: "https://{{ ansible_host | default(inventory_hostname) }}:6443/healthz"
-    validate_certs: false
-    status_code: 200
-  register: _api_health
-  until: _api_health.status == 200
-  retries: 10
-  delay: 5
-  when: k3s_is_first_node | bool
+- name: Fetch kubeconfig to local machine
+  when:
+    - k3s_is_first_node | bool
+  block:
+    - name: Ensure .kube directory exists
+      ansible.builtin.file:
+        path: "{{ k3s_cluster_kubeconfig_save_path | dirname }}"
+        state: directory
+        mode: '0755'
+      delegate_to: localhost
+      become: false
 
-- name: Display installation complete
-  ansible.builtin.debug:
-    msg:
-      - "=============================================="
-      - "K3S CONTROL PLANE INSTALLED"
-      - "=============================================="
-      - "Node: {{ inventory_hostname }}"
-      - "Status: {{ 'First node (with Cilium)' if k3s_is_first_node else 'HA member' }}"
-      - "=============================================="
+    - name: Fetch kubeconfig from control plane
+      ansible.builtin.fetch:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: "{{ k3s_cluster_kubeconfig_save_path }}"
+        flat: true
+        validate_checksum: true

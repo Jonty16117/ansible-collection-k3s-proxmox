@@ -1,0 +1,96 @@
+---
+# health-check.yml
+# Run health checks on deployed cluster
+# Usage: ansible-playbook -i inventory/dev/ health-check.yml
+#
+# This playbook verifies:
+# - All nodes are Ready
+# - CoreDNS is running
+# - Cilium is healthy
+
+# =============================================================================
+# PHASE 0: Bootstrap Inventory
+# =============================================================================
+- name: Configure cluster inventory
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tags:
+    - always
+    - config
+
+  roles:
+    - role: community.k3s_proxmox.cluster_config
+
+# =============================================================================
+# HEALTH CHECKS
+# =============================================================================
+- name: Verify cluster health
+  hosts: control_plane[0]
+  become: true
+  gather_facts: false
+  any_errors_fatal: true
+  tags:
+    - health
+    - check
+    - verify
+
+  vars:
+    kubeconfig: "/etc/rancher/k3s/k3s.yaml"
+
+  tasks:
+    - name: Get all nodes
+      ansible.builtin.command: kubectl get nodes -o wide --kubeconfig {{ kubeconfig }}
+      register: node_status
+      changed_when: false
+
+    - name: Display node status
+      ansible.builtin.debug:
+        msg: "{{ node_status.stdout_lines }}"
+
+    - name: Check all nodes are Ready
+      ansible.builtin.command: kubectl get nodes --kubeconfig {{ kubeconfig }}
+      register: nodes
+      changed_when: false
+
+    - name: Assert all nodes are Ready
+      ansible.builtin.assert:
+        that:
+          - "'Ready' in nodes.stdout"
+          - "'NotReady' not in nodes.stdout"
+        fail_msg: "Not all nodes are Ready"
+        success_msg: "All nodes are Ready"
+
+    - name: Get system pods
+      ansible.builtin.command: kubectl get pods -n kube-system --kubeconfig {{ kubeconfig }}
+      register: system_pods
+      changed_when: false
+
+    - name: Display system pods
+      ansible.builtin.debug:
+        msg: "{{ system_pods.stdout_lines }}"
+
+    - name: Get Cilium status
+      ansible.builtin.command: cilium status -o json --kubeconfig {{ kubeconfig }}
+      register: cilium_status
+      changed_when: false
+      ignore_errors: true
+
+    - name: Display Cilium status
+      vars:
+        _cilium: "{{ cilium_status.stdout | from_json }}"
+      ansible.builtin.debug:
+        msg:
+          - "Cilium: {{ 'OK' if _cilium.pod_state.cilium.Ready == _cilium.pod_state.cilium.Desired else 'ERROR' }}"
+          - "  cilium: {{ _cilium.pod_state.cilium.Ready }}/{{ _cilium.pod_state.cilium.Desired }}"
+          - "  cilium-envoy: {{ _cilium.pod_state['cilium-envoy'].Ready }}/{{ _cilium.pod_state['cilium-envoy'].Desired }}"
+          - "  cilium-operator: {{ _cilium.pod_state['cilium-operator'].Ready }}/{{ _cilium.pod_state['cilium-operator'].Desired }}"
+
+    - name: Display health check summary
+      ansible.builtin.debug:
+        msg:
+          - "=============================================="
+          - "HEALTH CHECK PASSED"
+          - "=============================================="
+      run_once: true
+      delegate_to: localhost

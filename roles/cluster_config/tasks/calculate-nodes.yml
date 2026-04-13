@@ -1,0 +1,64 @@
+---
+# tasks file for cluster_config - calculate nodes
+# Calculates node properties with override support for both CP and workers
+# Requires _node_type variable to be set: 'control_plane' or 'workers'
+
+- name: Initialize node list for {{ _node_type }}
+  ansible.builtin.set_fact:
+    _k3s_nodes: []
+    _topology: "{{ k3s_cluster_topology[_node_type] }}"
+
+- name: Calculate {{ _node_type }} node properties
+  ansible.builtin.set_fact:
+    _k3s_nodes: "{{ _k3s_nodes + [_node_data] }}"
+  vars:
+    _node_id: "{{ item }}"
+    _node_name: "{{ _topology.naming | replace('{id}', item | string) }}"
+    _node_vmid: "{{ _topology.vmid_start + (item | int - 1) }}"
+    _node_ip: "{{ network_prefix }}{{ _topology.ip_start + item | int - 1 }}"
+    _override: "{{ k3s_node_overrides[_node_name] | default({}) }}"
+    _node_memory: "{{ _override.memory | default(_topology.memory) }}"
+    _node_disk: "{{ _override.disk | default(_topology.disk) }}"
+    _node_cpu: "{{ _override.cpu_cores | default(_topology.cpu_cores) }}"
+    _node_storage: "{{ _override.storage | default(_topology.storage | default('local')) }}"
+    _node_role: "{{ 'control-plane' if _node_type == 'control_plane' else 'worker' }}"
+    _node_data:
+      id: "{{ _node_id }}"
+      name: "{{ _node_name }}"
+      vmid: "{{ _node_vmid }}"
+      ip: "{{ _node_ip }}"
+      memory: "{{ _node_memory }}"
+      disk: "{{ _node_disk }}"
+      cpu_cores: "{{ _node_cpu }}"
+      storage: "{{ _node_storage }}"
+      role: "{{ _node_role }}"
+  loop: "{{ range(1, _topology.count | int + 1) | list }}"
+  when: _topology.count | int > 0
+
+- name: Set control plane nodes fact
+  ansible.builtin.set_fact:
+    _k3s_cp_nodes: "{{ _k3s_nodes }}"
+  when: _node_type == 'control_plane'
+
+- name: Set worker nodes fact
+  ansible.builtin.set_fact:
+    _k3s_worker_nodes: "{{ _k3s_nodes }}"
+  when: _node_type == 'workers'
+
+- name: Display calculated {{ _node_type }} nodes
+  ansible.builtin.debug:
+    var: _k3s_nodes
+  when: _k3s_nodes | length > 0
+
+- name: Verify {{ _node_type }} node count
+  ansible.builtin.assert:
+    that:
+      - _k3s_nodes | length == _topology.count | int
+    fail_msg: "{{ _node_type }} node calculation failed - count mismatch"
+    success_msg: "{{ _node_type }} nodes calculated successfully: {{ _k3s_nodes | length }} nodes"
+  when: _topology.count | int > 0
+
+- name: Set empty {{ _node_type }} list if count is 0
+  ansible.builtin.set_fact:
+    _k3s_nodes: []
+  when: _topology.count | int == 0

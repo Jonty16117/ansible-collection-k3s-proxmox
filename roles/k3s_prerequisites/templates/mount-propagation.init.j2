@@ -1,0 +1,17 @@
+#!/sbin/openrc-run
+
+description="Setup mount propagation for Cilium"
+
+depend() {
+    after localmount
+    before k3s
+}
+
+start() {
+    ebegin "Setting up mount propagation for Cilium"
+    mount --make-shared /sys/fs/bpf 2>/dev/null || true
+    mount --make-shared /run/cilium/cgroupv2 2>/dev/null || true
+    mount --make-shared /var/run 2>/dev/null || true
+    mount --make-shared / 2>/dev/null || true
+    eend $?
+}

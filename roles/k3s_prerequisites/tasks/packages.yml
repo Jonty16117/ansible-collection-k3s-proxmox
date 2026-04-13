@@ -20,4 +20,5 @@
 
 - name: Clean APK cache
   ansible.builtin.command: apk cache clean
-  changed_when: true
+  register: _apk_cache_clean
+  changed_when: "'Cleaning cache' in _apk_cache_clean.stdout"

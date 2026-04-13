@@ -1,0 +1,108 @@
+---
+# tasks file for k3s_prerequisites - system configuration
+# Combines kernel modules, sysctl, services, and BPF mounts
+
+- name: Check if running in a container
+  ansible.builtin.stat:
+    path: /.dockerenv
+  register: _dockerenv_check
+  changed_when: false
+
+- name: Apply sysctl settings (persist to file)
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: false
+    sysctl_file: /etc/sysctl.d/99-k8s.conf
+  loop: "{{ k3s_prereq_sysctl }}"
+  changed_when: false
+
+- name: Reload sysctl settings
+  ansible.builtin.command: sysctl -p /etc/sysctl.d/99-k8s.conf
+  changed_when: false
+
+- name: Enable required services
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+  loop: "{{ k3s_prereq_services_enable }}"
+
+- name: Disable unnecessary services
+  ansible.builtin.service:
+    name: "{{ item }}"
+    enabled: false
+  loop: "{{ k3s_prereq_services_disable }}"
+  failed_when: false
+
+- name: Configure BPF mounts (Cilium)
+  when: not _dockerenv_check.stat.exists
+  block:
+    - name: Ensure BPF directory exists
+      ansible.builtin.file:
+        path: "{{ k3s_prereq_bpf_mount }}"
+        state: directory
+        mode: '0755'
+
+    - name: Mount BPF filesystem
+      ansible.builtin.mount:
+        path: "{{ k3s_prereq_bpf_mount }}"
+        src: bpf
+        fstype: bpf
+        state: mounted
+
+    - name: Create cgroup2 mount point
+      ansible.builtin.file:
+        path: /run/cilium/cgroupv2
+        state: directory
+        mode: '0755'
+
+    - name: Mount cgroup2 for Cilium
+      ansible.builtin.mount:
+        path: /run/cilium/cgroupv2
+        src: cgroup2
+        fstype: cgroup2
+        state: mounted
+
+    - name: Check BPF mount propagation
+      ansible.builtin.shell: findmnt -n -o PROPAGATION {{ k3s_prereq_bpf_mount }} 2>/dev/null || echo "private"
+      register: _bpf_propagation
+      changed_when: false
+
+    - name: Make BPF mount shared (required for Cilium)
+      ansible.builtin.command: mount --make-shared {{ k3s_prereq_bpf_mount }}
+      when: _bpf_propagation.stdout != "shared"
+      changed_when: true
+
+    - name: Check cgroup2 mount propagation
+      ansible.builtin.shell: findmnt -n -o PROPAGATION /run/cilium/cgroupv2 2>/dev/null || echo "private"
+      register: _cgroup2_propagation
+      changed_when: false
+
+    - name: Make cgroup2 mount shared (required for Cilium)
+      ansible.builtin.command: mount --make-shared /run/cilium/cgroupv2
+      when: _cgroup2_propagation.stdout != "shared"
+      changed_when: true
+
+    - name: Check /var/run propagation
+      ansible.builtin.shell: findmnt -n -o PROPAGATION /var/run 2>/dev/null || echo "private"
+      register: _varrun_propagation
+      changed_when: false
+
+    - name: Ensure /var/run is shared (required for Cilium netns)
+      ansible.builtin.command: mount --make-shared /var/run
+      when: _varrun_propagation.stdout != "shared"
+      changed_when: true
+
+    - name: Create mount propagation init script for Cilium
+      ansible.builtin.template:
+        src: mount-propagation.init.j2
+        dest: /etc/init.d/mount-propagation
+        mode: '0755'
+
+    - name: Enable mount propagation service
+      ansible.builtin.service:
+        name: mount-propagation
+        state: started
+        enabled: true

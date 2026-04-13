@@ -7,23 +7,37 @@ driver:
 
 platforms:
   - name: k3s-node-test
-    image: alpine:latest
-    command: /bin/sh
-    pre_build_image: true
+    image: alpine:3.18
+    pre_build_image: false
+    dockerfile: Dockerfile.j2
+    privileged: true
+    command: /sbin/init
 
 provisioner:
   name: ansible
+  config_options:
+    defaults:
+      remote_tmp: /tmp
+    privilege_escalation:
+      become: false
+  env:
+    ANSIBLE_ROLES_PATH: "../../../../"
+    ANSIBLE_COLLECTIONS_PATH: "~/.ansible/collections:/usr/share/ansible/collections"
   inventory:
     group_vars:
       all:
         k3s_prereq_packages:
           - curl
+          - python3
+        k3s_prereq_packages_remove: []
         k3s_prereq_services_disable: []
+        k3s_prereq_services_enable: []
         k3s_prereq_modules:
           - br_netfilter
         k3s_prereq_sysctl:
           - { name: "net.ipv4.ip_forward", value: "1" }
         k3s_prereq_zram_enabled: false
+        k3s_prereq_bpf_mount: "/sys/fs/bpf"
 
 verifier:
   name: ansible

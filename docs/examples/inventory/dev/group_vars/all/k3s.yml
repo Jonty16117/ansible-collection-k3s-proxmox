@@ -11,7 +11,7 @@ k3s_cluster_topology:
     memory: 4096
     disk: "4G"
     cpu_cores: 2
-  
+
   workers:
     count: 1
     memory: 2048
@@ -36,8 +36,13 @@ k3s_ssh_key_path: "{{ playbook_dir }}/../../.ssh/k8s_id_ed25519_dev"
 
 # =============================================================================
 # CILIUM CONFIGURATION
+# Lightweight configuration for development
 # =============================================================================
 k3s_cilium:
   enabled: true
-  hubble_enabled: true
+  hubble_enabled: false         # Disabled for dev (save RAM)
   optimized: true
+  direct_routing: true          # Native routing (no VXLAN)
+  prometheus_enabled: true      # Enable metrics
+  bandwidth_manager: false      # Disable QoS
+  egress_gateway: false         # Disable egress gateway

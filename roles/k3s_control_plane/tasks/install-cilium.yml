@@ -2,64 +2,154 @@
 # tasks file for k3s_control_plane - install Cilium
 # Installs Cilium CNI on the first control plane node
 
-- name: Check if Cilium is already installed
-  ansible.builtin.command: |
-    kubectl get pods -n {{ k3s_cilium_namespace }} -l k8s-app=cilium -o jsonpath='{.items[0].status.phase}'
+- name: Check if Cilium is running
+  ansible.builtin.shell: |
+    kubectl get pods -n {{ k3s_cilium_namespace }} -l k8s-app=cilium \
+      -o jsonpath='{.items[0].status.phase}' 2>/dev/null || echo "NotFound"
   environment:
     KUBECONFIG: "{{ k3s_control_plane_kubeconfig }}"
   register: _cilium_check
   changed_when: false
-  ignore_errors: true
+  failed_when: false
 
-- name: Install Cilium CLI
+- name: Check if Cilium CLI is installed
+  ansible.builtin.stat:
+    path: /usr/bin/cilium
+  register: _cilium_cli
+
+- name: Check CP node count for Cilium upgrade decision
   ansible.builtin.shell: |
-    CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt)
-    CLI_ARCH=amd64
-    if [ "$(uname -m)" = "aarch64" ]; then CLI_ARCH=arm64; fi
-    curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI_VERSION}/cilium-linux-${CLI_ARCH}.tar.gz
-    tar xzvfC cilium-linux-${CLI_ARCH}.tar.gz /usr/local/bin
-    rm cilium-linux-${CLI_ARCH}.tar.gz
-  args:
-    creates: /usr/local/bin/cilium
-  when: _cilium_check.rc != 0 or _cilium_check.stdout != "Running"
-
-- name: Generate Cilium values
-  ansible.builtin.template:
-    src: cilium-values.yaml.j2
-    dest: /tmp/cilium-values.yaml
-    mode: '0600'
-  when: _cilium_check.rc != 0 or _cilium_check.stdout != "Running"
+    kubectl get nodes --no-headers 2>/dev/null | grep -c "control-plane" || echo "0"
+  environment:
+    KUBECONFIG: "{{ k3s_control_plane_kubeconfig }}"
+  register: _cp_node_count
+  changed_when: false
+  failed_when: false
 
 - name: Install Cilium
-  ansible.builtin.shell: |
-    cilium install \
-      --version {{ k3s_cilium_version }} \
-      --namespace {{ k3s_cilium_namespace }} \
-      --values /tmp/cilium-values.yaml \
-      --wait
-  environment:
-    KUBECONFIG: "{{ k3s_control_plane_kubeconfig }}"
-  when: _cilium_check.rc != 0 or _cilium_check.stdout != "Running"
-  timeout: "{{ k3s_control_plane_cilium_timeout }}"
+  when:
+    - _cilium_check.stdout != "Running"
+    - _cilium_check.stdout != "Succeeded"
+    - _cp_node_count.stdout | int <= 1
+  block:
+    - name: Check if Alpine testing repository exists
+      ansible.builtin.shell: grep -q "edge/testing" /etc/apk/repositories && echo "exists" || echo "missing"
+      register: _repo_check
+      changed_when: false
 
-- name: Wait for Cilium pods
-  ansible.builtin.command: |
-    kubectl wait --for=condition=ready pod -l k8s-app=cilium \
-      -n {{ k3s_cilium_namespace }} --timeout=300s
+    - name: Enable Alpine testing repository for cilium-cli
+      ansible.builtin.lineinfile:
+        path: /etc/apk/repositories
+        line: "http://dl-cdn.alpinelinux.org/alpine/edge/testing"
+        state: present
+      become: true
+      when: _repo_check.stdout == "missing"
+
+    - name: Install Cilium CLI via apk
+      community.general.apk:
+        name: cilium-cli
+        update_cache: true
+        state: present
+
+    - name: Generate Cilium values
+      ansible.builtin.template:
+        src: cilium-values.yaml.j2
+        dest: /tmp/cilium-values.yaml
+        mode: '0600'
+
+    - name: Deploy Cilium
+      ansible.builtin.shell: |
+        export KUBECONFIG="{{ k3s_control_plane_kubeconfig }}"
+        /usr/bin/cilium install \
+          --version {{ k3s_cilium_version }} \
+          --namespace {{ k3s_cilium_namespace }} \
+          --values /tmp/cilium-values.yaml
+      args:
+        executable: /bin/sh
+      register: _cilium_install
+      changed_when: "'Installing' in _cilium_install.stdout or 'Created' in _cilium_install.stdout"
+
+    - name: Wait for Cilium pods
+      ansible.builtin.command: |
+        kubectl wait --for=condition=ready pod -l k8s-app=cilium \
+          -n {{ k3s_cilium_namespace }} --timeout=300s
+      environment:
+        KUBECONFIG: "{{ k3s_control_plane_kubeconfig }}"
+      changed_when: false
+
+- name: Upgrade Cilium for multi-CP cluster
+  when:
+    - _cilium_check.stdout == "Running" or _cilium_check.stdout == "Succeeded"
+    - _cp_node_count.stdout | int > 1
+  block:
+    - name: Generate Cilium values for multi-CP
+      ansible.builtin.template:
+        src: cilium-values.yaml.j2
+        dest: /tmp/cilium-values-multi-cp.yaml
+        mode: '0600'
+
+    - name: Upgrade Cilium via CLI
+      ansible.builtin.shell: |
+        export KUBECONFIG="{{ k3s_control_plane_kubeconfig }}"
+        cilium upgrade \
+          --version {{ k3s_cilium_version }} \
+          --namespace {{ k3s_cilium_namespace }} \
+          --values /tmp/cilium-values-multi-cp.yaml
+      args:
+        executable: /bin/sh
+      register: _cilium_upgrade
+      changed_when: "'Upgraded' in _cilium_upgrade.stdout or 'Success' in _cilium_upgrade.stdout"
+
+    - name: Wait for Cilium pods after upgrade
+      ansible.builtin.command: |
+        kubectl wait --for=condition=ready pod -l k8s-app=cilium \
+          -n {{ k3s_cilium_namespace }} --timeout=300s
+      environment:
+        KUBECONFIG: "{{ k3s_control_plane_kubeconfig }}"
+      changed_when: false
+
+- name: Show Cilium status
+  ansible.builtin.command: cilium status -o json
   environment:
     KUBECONFIG: "{{ k3s_control_plane_kubeconfig }}"
-  when: _cilium_check.rc != 0 or _cilium_check.stdout != "Running"
+    PATH: "/usr/bin:{{ ansible_env.PATH | default('/usr/local/bin:/usr/bin:/bin') }}"
+  register: _cilium_status
+  failed_when: false
   changed_when: false
 
 - name: Display Cilium status
-  ansible.builtin.command: cilium status
+  vars:
+    _cilium: "{{ _cilium_status.stdout | from_json }}"
+  ansible.builtin.debug:
+    msg:
+      - "Cilium: {{ 'OK' if _cilium.pod_state.cilium.Ready == _cilium.pod_state.cilium.Desired else 'ERROR' }}"
+      - "  cilium: {{ _cilium.pod_state.cilium.Ready }}/{{ _cilium.pod_state.cilium.Desired }}"
+      - "  cilium-envoy: {{ _cilium.pod_state['cilium-envoy'].Ready }}/{{ _cilium.pod_state['cilium-envoy'].Desired }}"
+      - "  cilium-operator: {{ _cilium.pod_state['cilium-operator'].Ready }}/{{ _cilium.pod_state['cilium-operator'].Desired }}"
+
+- name: Wait for node to be ready (with Cilium)
+  ansible.builtin.command: |
+    kubectl get node {{ inventory_hostname }} -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'
   environment:
     KUBECONFIG: "{{ k3s_control_plane_kubeconfig }}"
-  register: _cilium_status
+  register: _node_ready
+  until: _node_ready.stdout == "True"
+  retries: 50
+  delay: 10
   changed_when: false
-  ignore_errors: true
 
-- name: Show Cilium status
-  ansible.builtin.debug:
-    var: _cilium_status.stdout_lines
-    verbosity: 0
+- name: Create IngressClass for Cilium
+  when: k3s_is_first_node | default(false)
+  block:
+    - name: Render IngressClass manifest
+      ansible.builtin.template:
+        src: cilium-ingress-class.yaml.j2
+        dest: /tmp/cilium-ingress-class.yaml
+        mode: '0600'
+
+    - name: Apply IngressClass
+      ansible.builtin.shell: |
+        kubectl apply -f /tmp/cilium-ingress-class.yaml
+      environment:
+        KUBECONFIG: "{{ k3s_control_plane_kubeconfig }}"
+      changed_when: false

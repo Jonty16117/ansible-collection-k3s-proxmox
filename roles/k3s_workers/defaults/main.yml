@@ -5,7 +5,6 @@
 # =============================================================================
 # K3S CONFIGURATION
 # =============================================================================
-k3s_workers_version: "{{ k3s_version | default('v1.30.6+k3s1') }}"
 k3s_workers_token: "{{ k3s_token | default('k3s-cluster-secret-token') }}"
 
 # =============================================================================
@@ -23,9 +22,7 @@ k3s_workers_join_timeout: 300
 # =============================================================================
 # NODE LABELS
 # =============================================================================
-k3s_workers_labels:
-  - "node-role.kubernetes.io/worker=worker"
-
+# Note: node-role.kubernetes.io/worker=true is added automatically by k3s
 # Additional custom labels (user-defined)
 k3s_workers_extra_labels: []
 

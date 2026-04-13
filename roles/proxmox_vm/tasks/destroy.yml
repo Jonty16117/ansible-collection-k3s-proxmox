@@ -11,34 +11,71 @@
       - "{% for vm in _proxmox_vm_details %}- {{ vm.name }}: VMID {{ vm.vmid }}{% endfor %}"
       - "=============================================="
 
-- name: Stop VMs
-  community.general.proxmox_kvm:
+- name: Check if VMs exist
+  community.proxmox.proxmox_kvm:
     api_host: "{{ vault_proxmox_api_host }}"
     api_user: "{{ vault_proxmox_api_user }}"
     api_token_id: "{{ vault_proxmox_api_token_id }}"
     api_token_secret: "{{ vault_proxmox_api_token_secret }}"
     node: "{{ k3s_proxmox_node }}"
-    name: "{{ item.name }}"
+    vmid: "{{ item.vmid }}"
+    state: current
+  loop: "{{ _proxmox_vm_details }}"
+  when: not proxmox_vm_dry_run | bool
+  register: _vm_check
+  failed_when: false
+
+- name: Set list of existing VMs
+  ansible.builtin.set_fact:
+    _existing_vmids: "{{ _vm_check.results | selectattr('vmid', 'defined') | map(attribute='vmid') | list }}"
+
+- name: Stop VMs if they exist
+  community.proxmox.proxmox_kvm:
+    api_host: "{{ vault_proxmox_api_host }}"
+    api_user: "{{ vault_proxmox_api_user }}"
+    api_token_id: "{{ vault_proxmox_api_token_id }}"
+    api_token_secret: "{{ vault_proxmox_api_token_secret }}"
+    node: "{{ k3s_proxmox_node }}"
     vmid: "{{ item.vmid }}"
     state: stopped
     force: true
   loop: "{{ _proxmox_vm_details }}"
-  ignore_errors: true
-  when: not proxmox_vm_dry_run | bool
+  when:
+    - not proxmox_vm_dry_run | bool
+    - item.vmid in _existing_vmids
+  register: stop_result
+  failed_when: false
 
 - name: Destroy VMs
-  community.general.proxmox_kvm:
+  community.proxmox.proxmox_kvm:
     api_host: "{{ vault_proxmox_api_host }}"
     api_user: "{{ vault_proxmox_api_user }}"
     api_token_id: "{{ vault_proxmox_api_token_id }}"
     api_token_secret: "{{ vault_proxmox_api_token_secret }}"
     node: "{{ k3s_proxmox_node }}"
-    name: "{{ item.name }}"
     vmid: "{{ item.vmid }}"
     state: absent
     force: true
   loop: "{{ _proxmox_vm_details }}"
-  when: not proxmox_vm_dry_run | bool
+  when:
+    - not proxmox_vm_dry_run | bool
+    - item.vmid in _existing_vmids
+  register: destroy_result
+
+- name: Verify VMs are destroyed
+  ansible.builtin.fail:
+    msg: "VM {{ item.item.name }} (VMID {{ item.item.vmid }}) still exists after destroy"
+  loop: "{{ destroy_result.results }}"
+  when:
+    - not proxmox_vm_dry_run | bool
+    - not (item.skipped | default(false) | bool)
+    - item is not failed
+    - not (item.changed | bool)
+  register: _verify_destroy
+
+- name: Count successful destroy operations
+  ansible.builtin.set_fact:
+    destroyed_count: "{{ destroy_result.results | selectattr('changed', 'equalto', true) | list | length }}"
 
 - name: Display destruction summary
   ansible.builtin.debug:
@@ -46,5 +83,5 @@
       - "=============================================="
       - "VM DESTRUCTION COMPLETE"
       - "=============================================="
-      - "Destroyed {{ _proxmox_vm_details | length }} VMs"
+      - "Destroyed {{ destroyed_count }} VMs"
       - "=============================================="

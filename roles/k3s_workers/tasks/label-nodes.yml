@@ -4,7 +4,18 @@
 
 - name: Combine all labels
   ansible.builtin.set_fact:
-    _all_labels: "{{ k3s_workers_labels + k3s_workers_extra_labels }}"
+    _all_labels: "{{ (k3s_workers_labels | default([])) + (k3s_workers_extra_labels | default([])) }}"
+
+- name: Get current node labels
+  ansible.builtin.shell: |
+    kubectl get node {{ inventory_hostname }} -o jsonpath='{.metadata.labels}'
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  delegate_to: "{{ groups['control_plane'][0] }}"
+  become: true
+  register: _current_labels
+  changed_when: false
+  failed_when: false
 
 - name: Apply labels to worker node
   ansible.builtin.command: |
@@ -14,6 +25,12 @@
   delegate_to: "{{ groups['control_plane'][0] }}"
   become: true
   loop: "{{ _all_labels }}"
+  vars:
+    _label_key: "{{ item.split('=')[0] }}"
+    _label_value: "{{ item.split('=')[1] }}"
+  when: >
+    _current_labels.stdout_lines | select('search', _label_key ~ '=') | list | length == 0 or
+    _current_labels.stdout_lines | select('search', _label_key ~ '=' ~ _label_value) | list | length == 0
   changed_when: true
   ignore_errors: true
 

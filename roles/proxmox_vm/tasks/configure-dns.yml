@@ -1,12 +1,13 @@
 ---
 # tasks file for proxmox_vm - configure DNS
-# Configures DNS on VMs after creation (Alpine Linux compatibility)
+# Configures DNS on VMs after creation (Proxmox's cloudinit is not updating nameservers in the Alpine Linux's cloudinit image, so we do it manually here)
 
 - name: Create /etc/resolv.conf on {{ _vm_name }}
   ansible.builtin.template:
     src: resolv.conf.j2
     dest: /etc/resolv.conf
     mode: '0644'
+    force: true
   delegate_to: "{{ _vm_name }}"
   become: true
   vars:

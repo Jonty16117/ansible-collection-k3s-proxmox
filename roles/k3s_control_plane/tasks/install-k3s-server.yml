@@ -1,0 +1,63 @@
+---
+# tasks file for k3s_control_plane - install k3s server
+# Installs k3s server on control plane nodes (both first and HA nodes)
+# Configuration via /etc/rancher/k3s/config.yaml (template) AND CLI flags for redundancy
+
+- name: Create k3s config directory
+  ansible.builtin.file:
+    path: "{{ k3s_control_plane_config_path }}"
+    state: directory
+    mode: '0755'
+
+- name: Create k3s server configuration
+  ansible.builtin.template:
+    src: k3s-server-config.yaml.j2
+    dest: "{{ k3s_control_plane_config_path }}/config.yaml"
+    mode: '0600'
+
+- name: Set cluster-init flag for HA
+  ansible.builtin.set_fact:
+    _cluster_init: "{{ '--cluster-init' if (k3s_cluster_topology.control_plane.count | int > 1 and k3s_is_first_node | bool) else '' }}"
+
+- name: Get first node IP for HA join
+  ansible.builtin.set_fact:
+    _first_node_ip: "{{ hostvars[groups['control_plane'][0]].ansible_host }}"
+  when: not k3s_is_first_node | bool
+
+- name: Determine server URL for HA join
+  ansible.builtin.set_fact:
+    _server_url: "{{ '--server https://' ~ _first_node_ip ~ ':6443' }}"
+  when: not k3s_is_first_node | bool
+
+- name: Download and install k3s
+  ansible.builtin.shell: |
+    curl -sfL https://get.k3s.io | \
+    INSTALL_K3S_VERSION="{{ k3s_version }}" \
+    INSTALL_K3S_EXEC="server {{ _cluster_init }} {{ _server_url | default('') }} {{ k3s_control_plane_extra_args }}" \
+    K3S_TOKEN="{{ k3s_control_plane_token }}" \
+    sh -
+  args:
+    creates: "{{ k3s_control_plane_install_path }}/k3s"
+  timeout: "{{ k3s_control_plane_install_timeout }}"
+
+- name: Wait for k3s service
+  ansible.builtin.service:
+    name: k3s
+    state: started
+    enabled: true
+
+- name: Wait for node to be ready (without Cilium)
+  ansible.builtin.command: |
+    kubectl get node {{ inventory_hostname }} -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'
+  environment:
+    KUBECONFIG: "{{ k3s_control_plane_kubeconfig }}"
+  register: _node_ready
+  until: _node_ready.stdout == "True"
+  retries: 20
+  delay: 5
+  changed_when: false
+  when: not k3s_cilium_enabled | bool
+
+- name: Display node installed
+  ansible.builtin.debug:
+    msg: "{{ 'First' if k3s_is_first_node | bool else 'HA' }} control plane node installed successfully"

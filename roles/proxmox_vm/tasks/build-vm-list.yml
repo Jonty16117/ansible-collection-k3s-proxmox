@@ -18,6 +18,7 @@
       memory: "{{ _hostvars.k3s_node_memory }}"
       disk: "{{ _hostvars.k3s_node_disk }}"
       cpu_cores: "{{ _hostvars.k3s_node_cpu_cores }}"
+      storage: "{{ _hostvars.k3s_node_storage }}"
       role: "{{ _hostvars.k3s_node_role }}"
       is_first_node: "{{ _hostvars.k3s_is_first_node | default(false) }}"
   loop: "{{ groups['control_plane'] | default([]) }}"
@@ -34,6 +35,7 @@
       memory: "{{ _hostvars.k3s_node_memory }}"
       disk: "{{ _hostvars.k3s_node_disk }}"
       cpu_cores: "{{ _hostvars.k3s_node_cpu_cores }}"
+      storage: "{{ _hostvars.k3s_node_storage }}"
       role: "{{ _hostvars.k3s_node_role }}"
   loop: "{{ groups['workers'] | default([]) }}"
 

@@ -2,7 +2,12 @@
 # tasks file for k3s_workers - join
 # Joins worker node to k3s cluster
 
-- name: Get first control plane node IP
+- name: Validate control plane exists
+  ansible.builtin.fail:
+    msg: "ERROR: control_plane group is empty. Cannot join worker nodes."
+  when: groups['control_plane'] | length == 0
+
+- name: Set server URL
   ansible.builtin.set_fact:
     _server_url: "https://{{ hostvars[groups['control_plane'][0]].ansible_host }}:6443"
 
@@ -18,10 +23,10 @@
     dest: "{{ k3s_workers_config_path }}/config.yaml"
     mode: '0600'
 
-- name: Download and install k3s agent
+- name: Install k3s agent
   ansible.builtin.shell: |
     curl -sfL https://get.k3s.io | \
-    INSTALL_K3S_VERSION="{{ k3s_workers_version }}" \
+    INSTALL_K3S_VERSION="{{ k3s_version }}" \
     INSTALL_K3S_EXEC="agent" \
     K3S_URL="{{ _server_url }}" \
     K3S_TOKEN="{{ k3s_workers_token }}" \
@@ -30,12 +35,8 @@
     creates: "{{ k3s_workers_install_path }}/k3s"
   timeout: "{{ k3s_workers_install_timeout }}"
 
-- name: Wait for k3s-agent service
+- name: Start k3s-agent service
   ansible.builtin.service:
     name: k3s-agent
     state: started
     enabled: true
-
-- name: Display agent installed
-  ansible.builtin.debug:
-    msg: "K3s agent installed successfully"

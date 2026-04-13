@@ -1,48 +1,40 @@
 ---
 # tasks file for cluster_config
-# Main entry point for cluster configuration role
-# This role calculates cluster topology and dynamically adds hosts to inventory
+# Calculates cluster topology and dynamically adds hosts to inventory
 
-- name: Display cluster configuration
+- name: Log cluster configuration
   ansible.builtin.debug:
-    msg:
-      - "=============================================="
-      - "CLUSTER CONFIGURATION"
-      - "=============================================="
-      - "Control Plane nodes: {{ k3s_cluster_topology.control_plane.count }}"
-      - "Worker nodes: {{ k3s_cluster_topology.workers.count }}"
-      - "Total nodes: {{ k3s_cluster_topology.control_plane.count + k3s_cluster_topology.workers.count }}"
-      - "Network: {{ k3s_network.base_cidr }}"
-      - "=============================================="
+    msg: "Cluster: {{ k3s_cluster_topology.control_plane.count }} CP, {{ k3s_cluster_topology.workers.count }} workers, {{ k3s_network.base_cidr }}"
 
-- name: Include validation tasks
+- name: Parse network
+  ansible.builtin.set_fact:
+    network_prefix: "{{ k3s_network.base_cidr.split('/')[0].rsplit('.', 1)[0] }}."
+
+- name: Include validation
   ansible.builtin.include_tasks: validate.yml
   when: k3s_validate_topology | bool
 
 - name: Calculate control plane nodes
-  ansible.builtin.include_tasks: calculate-cp.yml
+  ansible.builtin.include_tasks: calculate-nodes.yml
+  vars:
+    _node_type: control_plane
 
 - name: Calculate worker nodes
-  ansible.builtin.include_tasks: calculate-workers.yml
+  ansible.builtin.include_tasks: calculate-nodes.yml
+  vars:
+    _node_type: workers
 
 - name: Generate warnings
   ansible.builtin.include_tasks: warnings.yml
 
-- name: Add hosts to dynamic inventory
+- name: Add hosts to inventory
   ansible.builtin.include_tasks: add-hosts.yml
 
-- name: Display configuration summary
+- name: Build summary
+  ansible.builtin.set_fact:
+    cp_node_summary: "{{ _k3s_cp_nodes | map(attribute='name') | list }}"
+    worker_node_summary: "{{ _k3s_worker_nodes | default([]) | map(attribute='name') | list }}"
+
+- name: Display inventory summary
   ansible.builtin.debug:
-    msg:
-      - "=============================================="
-      - "INVENTORY CONFIGURED SUCCESSFULLY"
-      - "=============================================="
-      - ""
-      - "Control Plane ({{ k3s_cluster_topology.control_plane.count }} nodes):"
-      - "{% for node in _k3s_cp_nodes %}- {{ node.name }}: {{ node.ip }} (VMID: {{ node.vmid }}, {{ node.memory }}MB){% endfor %}"
-      - ""
-      - "Workers ({{ k3s_cluster_topology.workers.count }} nodes):"
-      - "{% if _k3s_worker_nodes | default([]) | length > 0 %}{% for node in _k3s_worker_nodes %}- {{ node.name }}: {{ node.ip }} (VMID: {{ node.vmid }}, {{ node.memory }}MB){% endfor %}{% else %}(none - control plane will run workloads){% endif %}"
-      - ""
-      - "Next: Run playbooks with tags to deploy specific phases"
-      - "=============================================="
+    msg: "Inventory ready: CP={{ cp_node_summary }}, Workers={{ worker_node_summary }}"

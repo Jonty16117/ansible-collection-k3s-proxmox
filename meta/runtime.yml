@@ -6,8 +6,8 @@ requires_ansible: ">=2.15.0"
 
 action_groups:
   k3s_proxmox:
-    - community.general.proxmox_kvm
-    - community.general.proxmox
+    - community.proxmox.proxmox_kvm
+    - community.general
     - ansible.utils.ipaddr
     - ansible.builtin.add_host
 

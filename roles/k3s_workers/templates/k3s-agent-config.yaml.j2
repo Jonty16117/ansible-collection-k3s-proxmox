@@ -9,9 +9,10 @@ server: {{ _server_url | default('https://' + hostvars[groups['control_plane'][0
 token: {{ k3s_workers_token }}
 
 # Node labels
-{% if _all_labels | default(k3s_workers_labels + k3s_workers_extra_labels) | length > 0 %}
+{% set _labels = (k3s_workers_labels | default([])) + (k3s_workers_extra_labels | default([])) %}
+{% if _labels | length > 0 %}
 node-label:
-{% for label in _all_labels | default(k3s_workers_labels + k3s_workers_extra_labels) %}
+{% for label in _labels %}
   - {{ label }}
 {% endfor %}
 {% endif %}
@@ -27,4 +28,3 @@ node-taint:
 # Kubelet configuration
 kubelet-arg:
   - "feature-gates=GracefulNodeShutdown=true"
-  - "shutdown-grace-period=30s"

@@ -1,0 +1,17 @@
+# Python requirements for community.k3s_proxmox Ansible Collection
+# Install with: pip install -r requirements.txt
+
+# Core testing framework
+molecule>=26.0.0
+molecule-plugins[docker]>=25.0.0
+
+# Linting tools
+ansible-lint>=6.0.0
+yamllint>=1.30.0
+
+# Docker SDK for Python (required by molecule-plugins[docker])
+docker>=6.0.0
+
+# Additional dependencies that may be needed
+ansible-compat>=25.0.0
+ansible-core>=2.15.0

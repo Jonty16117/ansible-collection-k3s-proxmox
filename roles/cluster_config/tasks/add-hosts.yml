@@ -6,6 +6,10 @@
 # ADD CONTROL PLANE NODES
 # =============================================================================
 
+- name: Check if control plane nodes already exist
+  ansible.builtin.set_fact:
+    _existing_cp_hosts: "{{ groups['control_plane'] | default([]) | list }}"
+
 - name: Add control plane nodes to inventory
   ansible.builtin.add_host:
     name: "{{ item.name }}"
@@ -15,23 +19,27 @@
     ansible_host: "{{ item.ip }}"
     ansible_user: "{{ k3s_ssh_user }}"
     ansible_ssh_private_key_file: "{{ k3s_ssh_key_path }}"
-    # Node-specific variables
     k3s_node_vmid: "{{ item.vmid }}"
     k3s_node_memory: "{{ item.memory }}"
     k3s_node_disk: "{{ item.disk }}"
     k3s_node_cpu_cores: "{{ item.cpu_cores }}"
+    k3s_node_storage: "{{ item.storage }}"
     k3s_node_role: "{{ item.role }}"
-    k3s_is_first_node: "{{ loop.first }}"
-    # Cluster-wide variables
+    k3s_is_first_node: "{{ item.id | int == 1 }}"
     k3s_version: "{{ k3s_version }}"
     k3s_token: "{{ k3s_token }}"
   loop: "{{ _k3s_cp_nodes }}"
   loop_control:
     label: "{{ item.name }} -> {{ item.ip }}"
+  when: item.name not in _existing_cp_hosts
 
 # =============================================================================
 # ADD WORKER NODES
 # =============================================================================
+
+- name: Check if worker nodes already exist
+  ansible.builtin.set_fact:
+    _existing_worker_hosts: "{{ groups['workers'] | default([]) | list }}"
 
 - name: Add worker nodes to inventory
   ansible.builtin.add_host:
@@ -42,19 +50,20 @@
     ansible_host: "{{ item.ip }}"
     ansible_user: "{{ k3s_ssh_user }}"
     ansible_ssh_private_key_file: "{{ k3s_ssh_key_path }}"
-    # Node-specific variables
     k3s_node_vmid: "{{ item.vmid }}"
     k3s_node_memory: "{{ item.memory }}"
     k3s_node_disk: "{{ item.disk }}"
     k3s_node_cpu_cores: "{{ item.cpu_cores }}"
+    k3s_node_storage: "{{ item.storage }}"
     k3s_node_role: "{{ item.role }}"
-    # Cluster-wide variables
     k3s_version: "{{ k3s_version }}"
     k3s_token: "{{ k3s_token }}"
   loop: "{{ _k3s_worker_nodes }}"
   loop_control:
     label: "{{ item.name }} -> {{ item.ip }}"
-  when: _k3s_worker_nodes | length > 0
+  when:
+    - _k3s_worker_nodes | length > 0
+    - item.name not in _existing_worker_hosts
 
 # =============================================================================
 # VERIFY INVENTORY

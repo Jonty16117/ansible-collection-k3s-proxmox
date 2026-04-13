@@ -15,23 +15,23 @@ k3s_cluster_topology:
   control_plane:
     count: 3
     memory: 4096                # Memory in MB per node
-    disk: "4G"                  # Disk size (e.g., "4G", "10G")
+    disk: "8G"                  # Disk size (minimum 8G for Cilium)
     cpu_cores: 2                # Number of vCPU cores
     vmid_start: 500             # Starting VMID for CP nodes
     ip_start: 210               # Starting IP octet (192.168.178.210, 211, 212...)
     naming: "k8-cp-{id}"        # Node naming pattern
-  
+
   # Worker nodes
   # Can be 0 or more
   workers:
     count: 2
     memory: 2048
-    disk: "4G"
+    disk: "4G"                  # Disk size
     cpu_cores: 2
     vmid_start: 600             # Starting VMID for worker nodes
     ip_start: 220               # Starting IP octet (192.168.178.220, 221, 222...)
     naming: "k8-wk-{id}"        # Node naming pattern
-  
+
   # Warning control
   # Set to true to suppress topology warnings
   skip_warnings: false
@@ -52,15 +52,9 @@ k3s_network:
 # =============================================================================
 # K3S CONFIGURATION
 # =============================================================================
-k3s_version: "v1.30.6+k3s1"
+k3s_version: "v1.34.6+k3s1"
 k3s_token: "k3s-cluster-secret-token-change-in-production"
-
-# Components to disable (for Cilium compatibility)
-k3s_disable_components:
-  - "flannel"
-  - "kube-proxy"
-  - "traefik"
-  - "servicelb"
+k3s_cluster_name: ""  # Set this to rename your cluster context (e.g., "my-cluster")
 
 # =============================================================================
 # CILIUM CONFIGURATION
@@ -71,8 +65,11 @@ k3s_cilium:
   lb_pool_start: "192.168.178.240"
   lb_pool_end: "192.168.178.249"
   optimized: true               # Use reduced resource limits
-  hubble_enabled: true          # Enable Hubble observability
-  direct_routing: false         # Set true for same-L2 networks (disable VXLAN)
+  hubble_enabled: false         # Disable Hubble by default (save ~256MB RAM)
+  direct_routing: true          # Enable native routing (disable VXLAN) for same-L2 networks
+  prometheus_enabled: true      # Enable Prometheus metrics endpoint
+  bandwidth_manager: false      # Disable QoS bandwidth limiting (save CPU)
+  egress_gateway: false         # Disable egress gateway (simpler networking)
 
 # =============================================================================
 # PROXMOX CONFIGURATION

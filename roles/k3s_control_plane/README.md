@@ -35,7 +35,7 @@ This role installs and configures:
 | `k3s_cilium_lb_pool_start` | "192.168.178.240" | LB IP pool start |
 | `k3s_cilium_lb_pool_end` | "192.168.178.249" | LB IP pool end |
 | `k3s_cilium_hubble_enabled` | true | Enable Hubble |
-| `k3s_cilium_direct_routing` | false | Disable VXLAN |
+| `k3s_cilium_direct_routing` | true | Enable native routing (no encapsulation) |
 
 ## Dependencies
 

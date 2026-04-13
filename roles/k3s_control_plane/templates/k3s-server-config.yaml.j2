@@ -5,14 +5,23 @@
 # Cluster token
 token: {{ k3s_control_plane_token }}
 
-# Disable components (for Cilium)
-disable:
-{% for component in k3s_control_plane_disable_components %}
-  - {{ component }}
-{% endfor %}
+# Disable Flannel CNI (we'll use Cilium instead)
+flannel-backend: none
+
+# Disable kube-proxy (required for Cilium without iptables)
+disable-kube-proxy: true
 
 # Disable network policy (Cilium handles this)
 disable-network-policy: true
+
+# Disable other components
+disable:
+  - traefik
+  - servicelb
+
+# Cluster networking
+cluster-cidr: 10.42.0.0/16
+service-cidr: 10.43.0.0/16
 
 # Use containerd
 default-local-storage-path: /var/lib/rancher/k3s/storage
@@ -27,14 +36,14 @@ tls-san:
 # Kubelet configuration
 kubelet-arg:
   - "feature-gates=GracefulNodeShutdown=true"
-  - "shutdown-grace-period=30s"
 
 # etcd configuration (embedded)
+{% if k3s_cluster_topology.control_plane.count | int > 1 and k3s_is_first_node | bool %}
+cluster-init: true
+{% endif %}
 {% if not k3s_is_first_node %}
 server: https://{{ hostvars[groups['control_plane'][0]].ansible_host }}:6443
 {% endif %}
 
 # Additional arguments
-{% if k3s_control_plane_extra_args %}
-{{ k3s_control_plane_extra_args }}
-{% endif %}
+# Note: CLI flags like --snapshot-count are passed via INSTALL_K3S_EXEC, not here

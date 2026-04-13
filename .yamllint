@@ -1,0 +1,29 @@
+---
+# Yamllint configuration for community.k3s_proxmox
+# https://yamllint.readthedocs.io/en/stable/configuration.html
+
+extends: default
+
+ignore:
+  - .venv/
+  - .cache/
+  - "*.tar.gz"
+
+rules:
+  line-length:
+    max: 120
+    level: warning
+  truthy:
+    allowed-values: ['true', 'false', 'yes', 'no', 'on', 'off']
+  comments-indentation: disable
+  document-start:
+    present: true
+    level: warning
+  braces:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+  brackets:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+  new-line-at-end-of-file: enable
+  trailing-spaces: enable
