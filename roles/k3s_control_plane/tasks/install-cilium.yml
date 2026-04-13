@@ -153,3 +153,34 @@
       environment:
         KUBECONFIG: "{{ k3s_control_plane_kubeconfig }}"
       changed_when: false
+
+- name: Setup Cilium L2 LoadBalancer (Install or Upgrade path)
+  when:
+    - k3s_cilium_l2_enabled | bool
+    - k3s_is_first_node | default(false)
+  block:
+    - name: Render LB pool manifest
+      ansible.builtin.template:
+        src: cilium-lb-pool.yaml.j2
+        dest: /tmp/cilium-lb-pool.yaml
+        mode: '0600'
+
+    - name: Apply CiliumLoadBalancerIPPool
+      ansible.builtin.shell: |
+        kubectl apply -f /tmp/cilium-lb-pool.yaml --server-side
+      environment:
+        KUBECONFIG: "{{ k3s_control_plane_kubeconfig }}"
+      changed_when: false
+
+    - name: Render L2 announcement policy manifest
+      ansible.builtin.template:
+        src: cilium-l2announcement-policy.yaml.j2
+        dest: /tmp/cilium-l2announcement-policy.yaml
+        mode: '0600'
+
+    - name: Apply CiliumL2AnnouncementPolicy
+      ansible.builtin.shell: |
+        kubectl apply -f /tmp/cilium-l2announcement-policy.yaml --server-side
+      environment:
+        KUBECONFIG: "{{ k3s_control_plane_kubeconfig }}"
+      changed_when: false

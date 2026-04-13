@@ -8,7 +8,6 @@
 k3s_control_plane_token: "{{ k3s_token | default('k3s-cluster-secret-token') }}"
 
 # Additional k3s server arguments (CLI flags)
-# Note: For etcd tuning on slow storage, use --etcd-arg prefix, e.g.: --etcd-arg snapshot-count=100
 k3s_control_plane_extra_args: ""
 
 # =============================================================================
@@ -18,12 +17,20 @@ k3s_cilium_enabled: true
 k3s_cilium_version: "{{ k3s_cilium.version | default('1.19.2') }}"
 k3s_cilium_namespace: "kube-system"
 
-# LoadBalancer IP pool
-k3s_cilium_lb_pool_start: "{{ k3s_cilium.lb_pool_start | default('192.168.178.240') }}"
-k3s_cilium_lb_pool_end: "{{ k3s_cilium.lb_pool_end | default('192.168.178.249') }}"
+# L2 LoadBalancer
+k3s_cilium_l2_enabled: "{{ k3s_cilium.l2_enabled | default(false) }}"
+
+# HostPort for ingress (disabled when using L2 LoadBalancer)
+k3s_cilium_hostport_enabled: "{{ k3s_cilium.hostport_enabled | default(false) }}"
+
+# LoadBalancer IP pool CIDR (single IP for L2)
+k3s_cilium_lb_pool_cidr: "{{ k3s_cilium.lb_pool_cidr | default('192.168.178.240/32') }}"
 
 # Cluster CIDR (pod network)
 k3s_cluster_cidr: "{{ k3s_cilium.cluster_cidr | default('10.42.0.0/16') }}"
+
+# Service CIDR
+k3s_service_cidr: "10.43.0.0/16"
 
 # Resource optimization
 k3s_cilium_optimized: "{{ k3s_cilium.optimized | default(true) }}"
@@ -48,17 +55,9 @@ k3s_control_plane_config_path: /etc/rancher/k3s
 k3s_control_plane_kubeconfig: /etc/rancher/k3s/k3s.yaml
 
 # =============================================================================
-# ETCD SETTINGS (for NFS/slow storage optimization)
-# =============================================================================
-k3s_etcd_snapshot_count: 100
-k3s_etcd_election_timeout: 5000
-k3s_etcd_heartbeat_interval: 500
-
-# =============================================================================
 # TIMEOUTS
 # =============================================================================
 k3s_control_plane_install_timeout: 600
-k3s_control_plane_cilium_timeout: 900
 k3s_control_plane_api_timeout: 180
 
 # =============================================================================
@@ -69,7 +68,7 @@ k3s_is_first_node: false
 k3s_node_role: "control-plane"
 
 # =============================================================================
-# KUBECONFIG, GATED TO THE 1st CONTROL PLANE NODE
+# KUBECONFIG
 # =============================================================================
 k3s_cluster_kubeconfig_save_path: "~/.kube/config"
-k3s_cluster_name: ""  # Set this to rename your cluster context (e.g., "my-cluster")
+k3s_cluster_name: ""  # Set to rename cluster context (e.g., "k3s-prod")
