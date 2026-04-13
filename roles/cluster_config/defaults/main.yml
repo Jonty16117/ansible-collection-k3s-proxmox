@@ -50,35 +50,13 @@ k3s_network:
     - "8.8.8.8"
 
 # =============================================================================
-# K3S CONFIGURATION
+# K3S CONFIGURATION (used by cluster_config for add_host)
 # =============================================================================
 k3s_version: "v1.34.6+k3s1"
 k3s_token: "k3s-cluster-secret-token-change-in-production"
-k3s_cluster_name: ""  # Set this to rename your cluster context (e.g., "my-cluster")
 
 # =============================================================================
-# CILIUM CONFIGURATION
-# =============================================================================
-k3s_cilium:
-  enabled: true
-  version: "1.19.2"
-  lb_pool_start: "192.168.178.240"
-  lb_pool_end: "192.168.178.249"
-  optimized: true               # Use reduced resource limits
-  hubble_enabled: false         # Disable Hubble by default (save ~256MB RAM)
-  direct_routing: true          # Enable native routing (disable VXLAN) for same-L2 networks
-  prometheus_enabled: true      # Enable Prometheus metrics endpoint
-  bandwidth_manager: false      # Disable QoS bandwidth limiting (save CPU)
-  egress_gateway: false         # Disable egress gateway (simpler networking)
-
-# =============================================================================
-# PROXMOX CONFIGURATION
-# =============================================================================
-k3s_proxmox_template_vmid: 9600     # Source VM template ID
-k3s_proxmox_node: "pm02"            # Default Proxmox node name
-
-# =============================================================================
-# SSH CONFIGURATION
+# SSH CONFIGURATION (used by cluster_config for add_host)
 # =============================================================================
 k3s_ssh_user: "root"
 k3s_ssh_key_path: "{{ playbook_dir }}/.ssh/id_ed25519"

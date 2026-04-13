@@ -8,8 +8,8 @@ This role installs and configures:
 - First k3s control plane node (single or HA setup)
 - Additional HA control plane nodes
 - Cilium CNI with eBPF networking
-- LoadBalancer IP pool configuration
-- Hubble observability (optional)
+- L2 LoadBalancer for host-based ingress routing
+- Optional Hubble observability
 
 ## Requirements
 
@@ -29,13 +29,16 @@ This role installs and configures:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `k3s_control_plane_version` | `"{{ k3s_version }}"` | k3s version to install |
-| `k3s_cilium_enabled` | true | Install Cilium CNI |
-| `k3s_cilium_version` | "1.19.2" | Cilium version |
-| `k3s_cilium_lb_pool_start` | "192.168.178.240" | LB IP pool start |
-| `k3s_cilium_lb_pool_end` | "192.168.178.249" | LB IP pool end |
-| `k3s_cilium_hubble_enabled` | true | Enable Hubble |
-| `k3s_cilium_direct_routing` | true | Enable native routing (no encapsulation) |
+| `k3s_version` | `"v1.30.6+k3s1"` | k3s version to install |
+| `k3s_cluster_name` | `""` | Rename cluster context in kubeconfig |
+| `k3s_cilium_enabled` | `true` | Install Cilium CNI |
+| `k3s_cilium_version` | `"1.19.2"` | Cilium version |
+| `k3s_cilium_l2_enabled` | `false` | Enable L2 LoadBalancer |
+| `k3s_cilium_lb_pool_cidr` | `"192.168.178.240/32"` | LB IP pool CIDR (single IP) |
+| `k3s_cluster_cidr` | `"10.42.0.0/16"` | Pod network CIDR |
+| `k3s_service_cidr` | `"10.43.0.0/16"` | Service network CIDR |
+| `k3s_cilium_hubble_enabled` | `false` | Enable Hubble observability |
+| `k3s_cilium_optimized` | `true` | Enable resource optimization |
 
 ## Dependencies
 
