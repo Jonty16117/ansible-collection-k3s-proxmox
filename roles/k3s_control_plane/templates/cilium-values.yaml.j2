@@ -31,9 +31,11 @@ ipam:
 
 kubeProxyReplacement: true
 
-{% if k3s_cilium_lb_pool_start and k3s_cilium_lb_pool_end %}
+{% if k3s_cilium_l2_enabled | bool %}
 l2announcements:
   enabled: true
+  externalInterfaces:
+    - eth0
 
 loadBalancer:
   algorithm: maglev
@@ -44,7 +46,7 @@ lbIPAM:
   pools:
     - name: default
       cidrs:
-        - cidr: "{{ k3s_cilium_lb_pool_start | ansible.utils.ipaddr('network') }}/28"
+        - cidr: "{{ k3s_cilium_lb_pool_cidr }}"
 {% endif %}
 
 {% if k3s_cilium_hubble_enabled | bool %}
@@ -82,3 +84,11 @@ egressGateway:
 ingressController:
   enabled: true
   ingressClassName: cilium
+{% if k3s_cilium_hostport_enabled | bool %}
+  ingressLBPort: 80
+  hostPort:
+    enabled: true
+{% endif %}
+
+envoy:
+  enabled: true

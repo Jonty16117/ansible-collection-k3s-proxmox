@@ -20,8 +20,8 @@ disable:
   - servicelb
 
 # Cluster networking
-cluster-cidr: 10.42.0.0/16
-service-cidr: 10.43.0.0/16
+cluster-cidr: {{ k3s_cluster_cidr }}
+service-cidr: {{ k3s_service_cidr }}
 
 # Use containerd
 default-local-storage-path: /var/lib/rancher/k3s/storage
@@ -44,6 +44,3 @@ cluster-init: true
 {% if not k3s_is_first_node %}
 server: https://{{ hostvars[groups['control_plane'][0]].ansible_host }}:6443
 {% endif %}
-
-# Additional arguments
-# Note: CLI flags like --snapshot-count are passed via INSTALL_K3S_EXEC, not here
