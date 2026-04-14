@@ -59,6 +59,6 @@ deploy.yml
 ## Key Design Decisions
 
 1. **Dynamic Inventory**: No static inventory files to maintain
-2. **Per-Node Overrides**: Via host_vars for custom node configs
+2. **Node Type Overrides**: Via group_vars for CP or worker node types
 3. **Idempotent**: All roles support rerun safely
 4. **Tested**: Molecule tests for every role
