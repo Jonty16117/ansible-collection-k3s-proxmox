@@ -7,14 +7,14 @@ This document shows how variables defined in `group_vars/all/vars.yml` are used 
 ### k3s_cluster_topology
 | User Variable | Collection Usage | Status |
 |--------------|------------------|--------|
-| `control_plane.count` | Used in `calculate-cp.yml` to create N CP nodes | ✅ |
+| `control_plane.count` | Used in `calculate-nodes.yml` to create N CP nodes | ✅ |
 | `control_plane.memory` | Passed to VMs via `k3s_node_memory` hostvar | ✅ |
 | `control_plane.disk` | Passed to VMs via `k3s_node_disk` hostvar | ✅ |
 | `control_plane.cpu_cores` | Passed to VMs via `k3s_node_cpu_cores` hostvar | ✅ |
 | `control_plane.vmid_start` | Used to calculate VMID (start + index) | ✅ |
 | `control_plane.ip_start` | Used to calculate IP (prefix + start + index) | ✅ |
 | `control_plane.naming` | Template for node names (e.g., `k8-cp-{id}`) | ✅ |
-| `workers.count` | Used in `calculate-workers.yml` to create N workers | ✅ |
+| `workers.count` | Used in `calculate-nodes.yml` to create N workers | ✅ |
 | `workers.memory` | Passed to VMs via `k3s_node_memory` hostvar | ✅ |
 | `workers.disk` | Passed to VMs via `k3s_node_disk` hostvar | ✅ |
 | `workers.cpu_cores` | Passed to VMs via `k3s_node_cpu_cores` hostvar | ✅ |
@@ -87,7 +87,7 @@ k3s_workers role joins workers
 
 ### 1. Topology → Node Calculation
 ```yaml
-# In calculate-cp.yml / calculate-workers.yml
+# In calculate-nodes.yml
 _node_memory: "{{ _override.memory | default(k3s_cluster_topology.control_plane.memory) }}"
 _node_disk: "{{ _override.disk | default(k3s_cluster_topology.control_plane.disk) }}"
 _node_cpu: "{{ _override.cpu_cores | default(k3s_cluster_topology.control_plane.cpu_cores) }}"
@@ -123,7 +123,7 @@ k3s_node_overrides:
     cpu_cores: 4
 ```
 
-This is checked in `calculate-cp.yml`:
+This is checked in `calculate-nodes.yml`:
 ```yaml
 _override: "{{ k3s_node_overrides[_node_name] | default({}) }}"
 _node_memory: "{{ _override.memory | default(k3s_cluster_topology.control_plane.memory) }}"
