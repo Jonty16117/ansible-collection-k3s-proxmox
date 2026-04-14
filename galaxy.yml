@@ -24,6 +24,7 @@ tags:
   - cluster
 dependencies:
   community.general: ">=9.0.0"
+  community.proxmox: ">=1.0.0"
   ansible.utils: ">=4.0.0"
 repository: https://github.com/ansible-collections/community.k3s_proxmox
 documentation: https://github.com/ansible-collections/community.k3s_proxmox/blob/main/README.md
