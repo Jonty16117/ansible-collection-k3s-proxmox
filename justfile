@@ -55,17 +55,17 @@ clean:
     rm -rf .cache
     rm -rf {{venv_path}}
 
-# Deploy to environment (usage: just deploy dev|staging|production)
-deploy env:
-    {{venv_path}}/bin/ansible-playbook -i inventory/{{env}}/ playbooks/deploy.yml
+# Deploy cluster (usage: just deploy)
+deploy:
+    {{venv_path}}/bin/ansible-playbook -i my-inventory/ playbooks/deploy.yml
 
-# Destroy environment (usage: just destroy dev|staging|production)
-destroy env:
-    {{venv_path}}/bin/ansible-playbook -i inventory/{{env}}/ playbooks/destroy.yml
+# Destroy cluster
+destroy:
+    {{venv_path}}/bin/ansible-playbook -i my-inventory/ playbooks/destroy.yml
 
-# Health check on environment (usage: just health dev|staging|production)
-health env:
-    {{venv_path}}/bin/ansible-playbook -i inventory/{{env}}/ playbooks/health-check.yml
+# Health check
+health:
+    {{venv_path}}/bin/ansible-playbook -i my-inventory/ playbooks/health-check.yml
 
 # Show collection info
 info:

@@ -8,7 +8,7 @@ community.k3s_proxmox/
 ├── meta/runtime.yml        # Ansible requirements
 ├── README.md              # Main documentation
 ├── QUICKSTART.md          # Quick start guide
-├── Makefile               # Build & test commands
+├── justfile               # Build & automation commands
 │
 ├── playbooks/
 │   ├── deploy.yml         # Main deployment
@@ -22,11 +22,8 @@ community.k3s_proxmox/
 │   ├── k3s_control_plane/  # Phase 3: k3s install
 │   └── k3s_workers/        # Phase 4: Workers
 │
-└── docs/examples/
-    └── inventory/          # Example configs
-        ├── dev/
-        ├── staging/
-        └── production/
+└── docs/
+    └── examples/          # Example configurations
 ```
 
 ## Role Dependencies
@@ -63,6 +60,5 @@ deploy.yml
 
 1. **Dynamic Inventory**: No static inventory files to maintain
 2. **Per-Node Overrides**: Via host_vars for custom node configs
-3. **Multi-Environment**: Separate inventory directories
-4. **Idempotent**: All roles support rerun safely
-5. **Tested**: Molecule tests for every role
+3. **Idempotent**: All roles support rerun safely
+4. **Tested**: Molecule tests for every role

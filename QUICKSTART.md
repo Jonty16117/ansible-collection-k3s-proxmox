@@ -92,6 +92,3 @@ k3s_node_memory: 6144
 k3s_node_disk: "10G"
 ```
 
-## Multi-Environment
-
-Copy `docs/examples/inventory/` for dev/staging/prod templates.
