@@ -1,8 +1,8 @@
 ---
-# Collection metadata for community.k3s_proxmox
+# Collection metadata for jonty16117.k3s_proxmox
 # Published to Ansible Galaxy for k3s cluster deployment on Proxmox
 
-namespace: community
+namespace: jonty16117
 name: k3s_proxmox
 version: 1.0.0
 readme: README.md
@@ -27,10 +27,10 @@ dependencies:
   community.general: ">=9.0.0"
   community.proxmox: ">=1.0.0"
   ansible.utils: ">=4.0.0"
-repository: https://github.com/ansible-collections/community.k3s_proxmox
-documentation: https://github.com/ansible-collections/community.k3s_proxmox/blob/main/README.md
-homepage: https://github.com/ansible-collections/community.k3s_proxmox
-issues: https://github.com/ansible-collections/community.k3s_proxmox/issues
+repository: https://github.com/Jonty16117/ansible-collection-k3s-proxmox
+documentation: https://github.com/Jonty16117/ansible-collection-k3s-proxmox/blob/main/README.md
+homepage: https://github.com/Jonty16117/ansible-collection-k3s-proxmox
+issues: https://github.com/Jonty16117/ansible-collection-k3s-proxmox/issues
 build_ignore:
   - .git
   - .github

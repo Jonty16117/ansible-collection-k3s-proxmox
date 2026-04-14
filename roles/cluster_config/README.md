@@ -4,7 +4,7 @@ Calculates cluster topology and dynamically generates Ansible inventory for k3s 
 
 ## Description
 
-This role is the foundation of the community.k3s_proxmox collection. It:
+This role is the foundation of the jonty16117.k3s_proxmox collection. It:
 
 1. Reads cluster topology configuration (number of control plane and worker nodes)
 2. Validates the configuration (odd CP count, reasonable limits, etc.)
@@ -92,7 +92,7 @@ None
   gather_facts: false
   
   roles:
-    - role: community.k3s_proxmox.cluster_config
+    - role: jonty16117.k3s_proxmox.cluster_config
 
 - name: Display inventory
   hosts: localhost

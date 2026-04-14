@@ -39,7 +39,7 @@ None
   become: true
   
   roles:
-    - role: community.k3s_proxmox.k3s_prerequisites
+    - role: jonty16117.k3s_proxmox.k3s_prerequisites
 ```
 
 ## Testing

@@ -1,5 +1,5 @@
 ---
-# Runtime metadata for community.k3s_proxmox collection
+# Runtime metadata for jonty16117.k3s_proxmox collection
 # Defines minimum Ansible version and plugin routing
 
 requires_ansible: ">=2.15.0"

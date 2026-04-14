@@ -3,7 +3,7 @@
 ## Collection Structure
 
 ```
-community.k3s_proxmox/
+jonty16117.k3s_proxmox/
 ├── galaxy.yml              # Collection metadata
 ├── meta/runtime.yml        # Ansible requirements
 ├── README.md              # Main documentation

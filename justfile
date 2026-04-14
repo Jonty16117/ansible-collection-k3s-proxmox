@@ -1,4 +1,4 @@
-# Justfile for community.k3s_proxmox Ansible Collection
+# Justfile for jonty16117.k3s_proxmox Ansible Collection
 # https://github.com/casey/just
 #
 # This project uses a virtual environment (.venv) for dependencies.
@@ -47,11 +47,11 @@ build:
 
 # Install collection locally (builds first)
 install: build
-    {{venv_path}}/bin/ansible-galaxy collection install community-k3s_proxmox-*.tar.gz --force
+    {{venv_path}}/bin/ansible-galaxy collection install jonty16117-k3s_proxmox-*.tar.gz --force
 
 # Clean build artifacts and venv
 clean:
-    rm -f community-k3s_proxmox-*.tar.gz
+    rm -f jonty16117-k3s_proxmox-*.tar.gz
     rm -rf .cache
     rm -rf {{venv_path}}
 
@@ -69,7 +69,7 @@ health:
 
 # Show collection info
 info:
-    {{venv_path}}/bin/ansible-galaxy collection list community.k3s_proxmox || echo "Collection not installed"
+    {{venv_path}}/bin/ansible-galaxy collection list jonty16117.k3s_proxmox || echo "Collection not installed"
 
 # Show venv info
 venv-info:

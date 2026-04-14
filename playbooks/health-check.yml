@@ -20,7 +20,7 @@
     - config
 
   roles:
-    - role: community.k3s_proxmox.cluster_config
+    - role: jonty16117.k3s_proxmox.cluster_config
 
 # =============================================================================
 # HEALTH CHECKS

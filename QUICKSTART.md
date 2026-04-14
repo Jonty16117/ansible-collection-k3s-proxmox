@@ -6,11 +6,11 @@ Deploy a k3s cluster on Proxmox in 5 minutes.
 
 ```bash
 # From Git
-git clone https://github.com/ansible-collections/community.k3s_proxmox.git
-cd community.k3s_proxmox
+git clone https://github.com/Jonty16117/ansible-collection-k3s-proxmox.git
+cd jonty16117.k3s_proxmox
 
 # Or copy to your project
-cp -r community.k3s_proxmox /path/to/your/project/
+cp -r jonty16117.k3s_proxmox /path/to/your/project/
 ```
 
 ## 1. Create Inventory

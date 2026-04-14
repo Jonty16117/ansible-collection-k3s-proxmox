@@ -42,7 +42,7 @@ This role handles:
 
 ## Dependencies
 
-- `community.k3s_proxmox.cluster_config` role (must run first to populate inventory)
+- `jonty16117.k3s_proxmox.cluster_config` role (must run first to populate inventory)
 
 ## Example Playbook
 
@@ -52,7 +52,7 @@ This role handles:
   gather_facts: false
   
   roles:
-    - role: community.k3s_proxmox.proxmox_vm
+    - role: jonty16117.k3s_proxmox.proxmox_vm
       vars:
         proxmox_vm_state: present
 ```

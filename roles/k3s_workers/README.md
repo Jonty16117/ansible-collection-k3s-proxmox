@@ -35,7 +35,7 @@ k3s_workers_extra_labels:
 
 ## Dependencies
 
-- `community.k3s_proxmox.k3s_control_plane` role (must run first)
+- `jonty16117.k3s_proxmox.k3s_control_plane` role (must run first)
 
 ## Example Playbook
 
@@ -45,7 +45,7 @@ k3s_workers_extra_labels:
   become: true
   
   roles:
-    - role: community.k3s_proxmox.k3s_workers
+    - role: jonty16117.k3s_proxmox.k3s_workers
 ```
 
 ## Testing

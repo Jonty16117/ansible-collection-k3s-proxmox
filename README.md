@@ -1,6 +1,6 @@
-# community.k3s_proxmox
+# jonty16117.k3s_proxmox
 
-[![Ansible Collection](https://img.shields.io/badge/collection-community.k3s_proxmox-blue)](https://galaxy.ansible.com/community/k3s_proxmox)
+[![Ansible Collection](https://img.shields.io/badge/collection-jonty16117.k3s_proxmox-blue)](https://galaxy.ansible.com/jonty16117/k3s_proxmox)
 [![License](https://img.shields.io/badge/license-GPL%20v3-red)](LICENSE)
 
 Lightweight [k3s](https://k3s.io/) cluster deployment on [Proxmox VE](https://www.proxmox.com/en/proxmox-virtual-environment) using Alpine Linux, Cilium CNI with eBPF networking, and L2 LoadBalancer announcement. Designed for local LAN environments.
@@ -28,16 +28,16 @@ Lightweight [k3s](https://k3s.io/) cluster deployment on [Proxmox VE](https://ww
 ### From Ansible Galaxy
 
 ```bash
-ansible-galaxy collection install community.k3s_proxmox
+ansible-galaxy collection install jonty16117.k3s_proxmox
 ```
 
 ### From Git
 
 ```bash
-git clone https://github.com/ansible-collections/community.k3s_proxmox.git
-cd community.k3s_proxmox
+git clone https://github.com/Jonty16117/ansible-collection-k3s-proxmox.git
+cd jonty16117.k3s_proxmox
 ansible-galaxy collection build
-ansible-galaxy collection install community-k3s_proxmox-*.tar.gz
+ansible-galaxy collection install jonty16117-k3s_proxmox-*.tar.gz
 ```
 
 ## Quick Start
@@ -197,7 +197,7 @@ make test
 
 ```bash
 ansible-galaxy collection build
-ansible-galaxy collection install community-k3s_proxmox-*.tar.gz --force
+ansible-galaxy collection install jonty16117-k3s_proxmox-*.tar.gz --force
 ```
 
 ## License
@@ -214,8 +214,8 @@ Contributions welcome! Please:
 
 ## Support
 
-- Issues: [GitHub Issues](https://github.com/ansible-collections/community.k3s_proxmox/issues)
-- Discussions: [GitHub Discussions](https://github.com/ansible-collections/community.k3s_proxmox/discussions)
+- Issues: [GitHub Issues](https://github.com/Jonty16117/ansible-collection-k3s-proxmox/issues)
+- Discussions: [GitHub Discussions](https://github.com/Jonty16117/ansible-collection-k3s-proxmox/discussions)
 
 ## Acknowledgments
 

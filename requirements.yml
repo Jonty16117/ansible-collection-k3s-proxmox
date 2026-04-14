@@ -1,5 +1,5 @@
 ---
-# External dependencies for community.k3s_proxmox collection
+# External dependencies for jonty16117.k3s_proxmox collection
 # Install with: ansible-galaxy collection install -r requirements.yml
 
 collections:

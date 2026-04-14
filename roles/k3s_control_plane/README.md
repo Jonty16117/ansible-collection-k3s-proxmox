@@ -42,7 +42,7 @@ This role installs and configures:
 
 ## Dependencies
 
-- `community.k3s_proxmox.k3s_prerequisites` role (must run first)
+- `jonty16117.k3s_proxmox.k3s_prerequisites` role (must run first)
 
 ## Example Playbook
 
@@ -52,7 +52,7 @@ This role installs and configures:
   become: true
   
   roles:
-    - role: community.k3s_proxmox.k3s_control_plane
+    - role: jonty16117.k3s_proxmox.k3s_control_plane
 ```
 
 ## Testing

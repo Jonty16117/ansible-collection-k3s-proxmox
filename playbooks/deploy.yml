@@ -25,7 +25,7 @@
     - bootstrap
 
   roles:
-    - role: community.k3s_proxmox.cluster_config
+    - role: jonty16117.k3s_proxmox.cluster_config
 
 # =============================================================================
 # PHASE 1: Infrastructure (Proxmox VMs)
@@ -41,7 +41,7 @@
     - force
 
   roles:
-    - role: community.k3s_proxmox.proxmox_vm
+    - role: jonty16117.k3s_proxmox.proxmox_vm
       when: proxmox_vm_state | default('present') == 'present'
 
 # =============================================================================
@@ -58,7 +58,7 @@
     - k3s
 
   roles:
-    - role: community.k3s_proxmox.k3s_prerequisites
+    - role: jonty16117.k3s_proxmox.k3s_prerequisites
 
 # =============================================================================
 # PHASE 3: Control Plane Installation
@@ -72,7 +72,7 @@
     - server
 
   roles:
-    - role: community.k3s_proxmox.k3s_control_plane
+    - role: jonty16117.k3s_proxmox.k3s_control_plane
 
 # =============================================================================
 # PHASE 4: Worker Nodes
@@ -86,7 +86,7 @@
     - agents
 
   roles:
-    - role: community.k3s_proxmox.k3s_workers
+    - role: jonty16117.k3s_proxmox.k3s_workers
 
 # =============================================================================
 # KUBECONFIGURATION
