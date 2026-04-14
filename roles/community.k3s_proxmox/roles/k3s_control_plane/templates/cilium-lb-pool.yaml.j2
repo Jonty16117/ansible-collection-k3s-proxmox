@@ -1,8 +1,0 @@
-apiVersion: cilium.io/v2
-kind: CiliumLoadBalancerIPPool
-metadata:
-  name: default-pool
-spec:
-  blocks:
-    - cidr: "{{ k3s_cilium_lb_pool_start | ansible.utils.ipaddr('network') }}/28"
-  disabled: false
