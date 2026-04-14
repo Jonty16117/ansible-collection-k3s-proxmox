@@ -38,8 +38,8 @@ syntax-check:
 
 # Lint all YAML files (relaxed settings, continues on errors)
 lint:
-    yamllint -d relaxed playbooks/ roles/ || true
-    ansible-lint playbooks/ || true
+    {{venv_path}}/bin/yamllint -d relaxed playbooks/ roles/ || true
+    {{venv_path}}/bin/ansible-lint playbooks/ || true
 
 # Build collection tarball using venv ansible-galaxy
 build:
