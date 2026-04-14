@@ -4,7 +4,7 @@
 
 namespace: jonty16117
 name: k3s_proxmox
-version: 1.0.0
+version: 1.0.1
 readme: README.md
 authors:
   - Jaswinder Kantiwal
