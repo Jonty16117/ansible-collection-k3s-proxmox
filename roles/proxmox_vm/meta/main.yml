@@ -1,0 +1,21 @@
+---
+galaxy_info:
+  role_name: proxmox_vm
+  author: FlashTrack Team
+  description: Creates and manages VMs in Proxmox VE
+  license: GPL-3.0-or-later
+  min_ansible_version: "2.15"
+
+  platforms:
+    - name: GenericLinux
+      versions:
+        - all
+
+  galaxy_tags:
+    - proxmox
+    - virtualization
+    - vm
+    - infrastructure
+
+dependencies:
+  - community.proxmox

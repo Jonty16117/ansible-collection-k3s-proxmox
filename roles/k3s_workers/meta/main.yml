@@ -1,0 +1,20 @@
+---
+galaxy_info:
+  role_name: k3s_workers
+  author: FlashTrack Team
+  description: Joins worker nodes to k3s cluster
+  license: GPL-3.0-or-later
+  min_ansible_version: "2.15"
+
+  platforms:
+    - name: GenericLinux
+      versions:
+        - all
+
+  galaxy_tags:
+    - kubernetes
+    - k3s
+    - workers
+    - agents
+
+dependencies: []
