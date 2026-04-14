@@ -7,8 +7,7 @@ name: k3s_proxmox
 version: 1.0.0
 readme: README.md
 authors:
-  - FlashTrack Team
-  - Community contributors
+  - Jaswinder Kantiwal
 description: >
   Production-ready k3s cluster deployment on Proxmox with Cilium CNI.
   Supports dynamic inventory generation, multi-environment configurations,

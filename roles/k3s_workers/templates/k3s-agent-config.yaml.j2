@@ -17,14 +17,6 @@ node-label:
 {% endfor %}
 {% endif %}
 
-# Node taints
-{% if k3s_workers_taints | length > 0 %}
-node-taint:
-{% for taint in k3s_workers_taints %}
-  - {{ taint }}
-{% endfor %}
-{% endif %}
-
 # Kubelet configuration
 kubelet-arg:
   - "feature-gates=GracefulNodeShutdown=true"

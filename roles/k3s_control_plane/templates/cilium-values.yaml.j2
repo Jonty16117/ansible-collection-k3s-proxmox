@@ -82,7 +82,7 @@ egressGateway:
 {% endif %}
 
 ingressController:
-  enabled: true
+  enabled: false
   ingressClassName: cilium
 {% if k3s_cilium_hostport_enabled | bool %}
   ingressLBPort: 80
