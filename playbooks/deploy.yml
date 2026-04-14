@@ -147,5 +147,5 @@
           - "  3. Check Cilium: kubectl -n kube-system get pods"
           - ""
           - "Run health checks:"
-          - "  ansible-playbook -i inventory.yml health-check.yml"
+          - "  ansible-playbook -i inventory/ health-check.yml"
           - "=============================================="
