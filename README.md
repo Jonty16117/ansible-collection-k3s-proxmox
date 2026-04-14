@@ -19,8 +19,9 @@ Lightweight [k3s](https://k3s.io/) cluster deployment on [Proxmox VE](https://ww
 
 - Ansible >= 2.15.0
 - Proxmox VE >= 7.0
-- Alpine Linux cloud-init template
+- Alpine Linux cloud-init template (with BIOS/UEFI boot, not EFI-only)
 - SSH key pair for node access
+- All cluster nodes must be on the same local LAN (same subnet)
 
 ## Installation
 
@@ -135,17 +136,26 @@ ansible-playbook -i my-inventory/ destroy.yml
 ansible-playbook -i my-inventory/ health-check.yml
 ```
 
-## Per-Node Overrides
+## Node Overrides
 
-Create `my-inventory/host_vars/<node-name>.yml`:
+Override resources for control plane (CP) or worker (WK) nodes collectively:
 
 ```yaml
----
-# Example: Override specific node resources
-k3s_node_memory: 6144
-k3s_node_disk: "10G"
-k3s_node_cpu_cores: 4
+# my-inventory/group_vars/all/k3s.yml
+k3s_cluster_topology:
+  control_plane:
+    count: 3
+    memory: 6144              # Override CP memory
+    disk: "10G"               # Override CP disk
+    cpu_cores: 4              # Override CP CPUs
+  
+  workers:
+    count: 2
+    memory: 4096              # Override WK memory
+    disk: "8G"                # Override WK disk
 ```
+
+> **Note**: Per-node individual overrides are not yet supported. All CP nodes share the same resources, and all WK nodes share the same resources.
 
 ## Role Variables
 

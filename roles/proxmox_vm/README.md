@@ -15,7 +15,7 @@ This role handles:
 ## Requirements
 
 - Proxmox VE >= 7.0
-- Alpine Linux cloud-init template
+- Alpine Linux cloud-init template (with BIOS/UEFI boot, not EFI-only)
 - Proxmox API token with VM management permissions
 - SSH key pair for node access
 
