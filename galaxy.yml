@@ -9,9 +9,10 @@ readme: README.md
 authors:
   - Jaswinder Kantiwal
 description: >
-  Production-ready k3s cluster deployment on Proxmox with Cilium CNI.
-  Supports dynamic inventory generation, multi-environment configurations,
-  and automated node lifecycle management.
+  Lightweight k3s cluster deployment on Proxmox VE using Alpine Linux,
+  Cilium CNI with eBPF networking, and L2 LoadBalancer announcement.
+  Designed for local LAN environments with dynamic inventory and
+  automated node lifecycle management.
 license:
   - GPL-3.0-or-later
 tags:

@@ -3,22 +3,23 @@
 [![Ansible Collection](https://img.shields.io/badge/collection-community.k3s_proxmox-blue)](https://galaxy.ansible.com/community/k3s_proxmox)
 [![License](https://img.shields.io/badge/license-GPL%20v3-red)](LICENSE)
 
-Production-ready [k3s](https://k3s.io/) cluster deployment on [Proxmox VE](https://www.proxmox.com/en/proxmox-virtual-environment) with [Cilium](https://cilium.io/) CNI.
+Lightweight [k3s](https://k3s.io/) cluster deployment on [Proxmox VE](https://www.proxmox.com/en/proxmox-virtual-environment) using Alpine Linux, Cilium CNI with eBPF networking, and L2 LoadBalancer announcement. Designed for local LAN environments.
 
 ## Features
 
-- **Dynamic Inventory**: No manual inventory generation - cluster topology is calculated automatically
-- **Multi-Environment**: Support for dev, staging, production with isolated configurations
+- **Lightweight**: Production-ready k3s with minimal resource footprint
+- **Alpine Linux**: Optimized OS for container workloads
+- **Dynamic Inventory**: No manual inventory - cluster topology is calculated automatically
 - **High Availability**: Automated HA control plane setup with embedded etcd
 - **Cilium CNI**: Automatic installation with eBPF networking and observability
+- **L2 LoadBalancer**: Cilium L2 announcement enabled by default
 - **Idempotent**: Safe to rerun multiple times
-- **Well-Tested**: Molecule tests for all roles
 
 ## Requirements
 
 - Ansible >= 2.15.0
 - Proxmox VE >= 7.0
-- Alpine Linux cloud-init template (VMID 9600 recommended)
+- Alpine Linux cloud-init template
 - SSH key pair for node access
 
 ## Installation
@@ -113,34 +114,34 @@ ansible-playbook -i my-inventory/ \
 ### Deploy Full Cluster
 
 ```bash
-ansible-playbook -i inventory/dev/ deploy.yml
+ansible-playbook -i my-inventory/ deploy.yml
 ```
 
 ### Deploy Only VMs
 
 ```bash
-ansible-playbook -i inventory/dev/ deploy.yml --tags proxmox
+ansible-playbook -i my-inventory/ deploy.yml --tags proxmox
 ```
 
 ### Destroy Cluster
 
 ```bash
-ansible-playbook -i inventory/dev/ destroy.yml
+ansible-playbook -i my-inventory/ destroy.yml
 ```
 
 ### Health Check
 
 ```bash
-ansible-playbook -i inventory/dev/ health-check.yml
+ansible-playbook -i my-inventory/ health-check.yml
 ```
 
 ## Per-Node Overrides
 
-Create `inventory/dev/host_vars/k8-cp-1.yml`:
+Create `my-inventory/host_vars/<node-name>.yml`:
 
 ```yaml
 ---
-# This specific node gets 6GB RAM instead of default 4GB
+# Example: Override specific node resources
 k3s_node_memory: 6144
 k3s_node_disk: "10G"
 k3s_node_cpu_cores: 4
@@ -168,27 +169,6 @@ k3s_node_cpu_cores: 4
 | `k3s_proxmox_template_vmid` | 9600 | Source VM template |
 | `k3s_proxmox_node` | "pm02" | Proxmox node name |
 | `proxmox_vm_state` | present | present/absent |
-
-## Multi-Environment Setup
-
-```
-inventory/
-├── dev/
-│   ├── hosts.yml              # pm02-dev
-│   └── group_vars/all/
-│       ├── k3s.yml            # 1 CP, 1 worker
-│       └── vault.yml          # Dev secrets
-├── staging/
-│   ├── hosts.yml              # pm02-staging
-│   └── group_vars/all/
-│       ├── k3s.yml            # 3 CP, 2 workers
-│       └── vault.yml          # Staging secrets
-└── production/
-    ├── hosts.yml              # pm02-prod
-    └── group_vars/all/
-        ├── k3s.yml            # 3 CP, 5 workers
-        └── vault.yml          # Production secrets
-```
 
 ## Development
 

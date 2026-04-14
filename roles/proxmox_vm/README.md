@@ -15,7 +15,7 @@ This role handles:
 ## Requirements
 
 - Proxmox VE >= 7.0
-- Alpine Linux cloud-init template (VMID 9600 recommended)
+- Alpine Linux cloud-init template
 - Proxmox API token with VM management permissions
 - SSH key pair for node access
 
