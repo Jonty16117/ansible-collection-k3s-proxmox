@@ -6,9 +6,9 @@ Joins worker nodes to k3s cluster.
 
 This role:
 - Joins worker nodes to an existing k3s cluster
-- Applies worker role labels
+- Applies worker role labels (k3s auto-adds `node-role.kubernetes.io/worker=true`)
 - Configures kubelet parameters
-- Supports custom labels and taints
+- Supports custom labels
 
 ## Requirements
 
@@ -22,9 +22,8 @@ This role:
 |----------|---------|-------------|
 | `k3s_workers_version` | `"{{ k3s_version }}"` | k3s version to install |
 | `k3s_workers_token` | `"{{ k3s_token }}"` | Cluster token |
-| `k3s_workers_labels` | `["node-role.kubernetes.io/worker=worker"]` | Default labels |
+| `k3s_workers_labels` | `[]` | Additional labels (k3s auto-adds `node-role.kubernetes.io/worker=true`) |
 | `k3s_workers_extra_labels` | `[]` | Additional custom labels |
-| `k3s_workers_taints` | `[]` | Node taints |
 
 ## Label Format
 

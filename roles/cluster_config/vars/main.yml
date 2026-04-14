@@ -1,6 +1,0 @@
----
-# vars file for cluster_config
-# These are internal variables - NOT user-editable
-
-# Note: Network prefix variables (_k3s_network_prefix, _k3s_network_third_octet)
-# are now calculated in tasks/main.yml to avoid ansible.utils.ipaddr issues
