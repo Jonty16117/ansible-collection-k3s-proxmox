@@ -138,10 +138,8 @@
 # =============================================================================
 
 - name: Read SSH public key
-  ansible.builtin.slurp:
-    src: "{{ k3s_proxmox_cloudinit_ssh_key_path }}.pub"
-  register: _ssh_key_content
-  delegate_to: localhost
+  set_fact:
+    _ssh_key_content: "{{ lookup('file', k3s_proxmox_cloudinit_ssh_key_path + '.pub') | trim }}"
   when: not proxmox_vm_dry_run | bool
 
 - name: Configure cloud-init settings
@@ -154,7 +152,7 @@
     vmid: "{{ item.vmid }}"
     name: "{{ item.name }}"
     ciuser: "{{ k3s_proxmox_cloudinit_user }}"
-    sshkeys: "{{ _ssh_key_content.content | b64decode | trim }}"
+    sshkeys: "{{ _ssh_key_content }}"
     nameservers: "{{ k3s_proxmox_dns_servers | join(' ') }}"
     update: true
   loop: "{{ _proxmox_vm_details }}"
