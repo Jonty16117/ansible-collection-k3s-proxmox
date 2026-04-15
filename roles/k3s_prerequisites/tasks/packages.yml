@@ -6,17 +6,29 @@
   community.general.apk:
     update_cache: true
   changed_when: false
+  register: _apk_cache_update
+  until: _apk_cache_update is succeeded
+  retries: 5
+  delay: 10
 
 - name: Install required packages
   community.general.apk:
     name: "{{ k3s_prereq_packages }}"
     state: present
+  register: _apk_install
+  until: _apk_install is succeeded
+  retries: 5
+  delay: 10
 
 - name: Remove unnecessary packages
   community.general.apk:
     name: "{{ k3s_prereq_packages_remove }}"
     state: absent
   ignore_errors: true
+  register: _apk_remove
+  until: _apk_remove is succeeded
+  retries: 5
+  delay: 10
 
 - name: Clean APK cache
   ansible.builtin.command: apk cache clean

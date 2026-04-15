@@ -9,24 +9,28 @@
     timeout: "{{ proxmox_ssh_timeout }}"
     delay: "{{ proxmox_ssh_delay }}"
     state: started
-  delegate_to: localhost
-  become: false
 
-- name: Confirm SSH connectivity to {{ _vm_name }}
-  ansible.builtin.command: |
+- name: Copy SSH private key to pm02 (temporary)
+  ansible.builtin.copy:
+    src: "{{ k3s_proxmox_cloudinit_ssh_key_path }}"
+    dest: "/tmp/tmp_ssh_key"
+    mode: '0600'
+
+- name: Confirm SSH connectivity
+  ansible.builtin.shell: |
     ssh -o ConnectTimeout=5 \
         -o StrictHostKeyChecking=no \
         -o UserKnownHostsFile=/dev/null \
-        -i {{ k3s_proxmox_cloudinit_ssh_key_path }} \
+        -i /tmp/tmp_ssh_key \
         {{ k3s_proxmox_cloudinit_user }}@{{ _vm_ip }} \
         echo "SSH OK"
-  delegate_to: localhost
-  become: false
-  changed_when: false
   register: _ssh_test
-  until: _ssh_test.rc == 0
-  retries: 5
-  delay: 10
+  changed_when: false
+
+- name: Remove temporary SSH key
+  ansible.builtin.file:
+    path: /tmp/tmp_ssh_key
+    state: absent
 
 - name: Display SSH success
   ansible.builtin.debug:
