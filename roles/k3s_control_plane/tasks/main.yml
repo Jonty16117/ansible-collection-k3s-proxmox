@@ -88,17 +88,17 @@
   when:
     - k3s_is_first_node | bool
   block:
-    - name: Ensure .kube directory exists
-      local_action:
-        module: ansible.builtin.file
+    - name: Ensure .kube directory exists on controller
+      delegate_to: localhost
+      ansible.builtin.file:
         path: "{{ k3s_cluster_kubeconfig_save_path | dirname }}"
         state: directory
-        mode: '0755'
-      become: false
+        mode: "0755"
 
-    - name: Fetch kubeconfig from control plane
+    - name: Fetch kubeconfig to controller
+      when:
+        - k3s_is_first_node | bool
       ansible.builtin.fetch:
         src: /etc/rancher/k3s/k3s.yaml
         dest: "{{ k3s_cluster_kubeconfig_save_path }}"
         flat: true
-        validate_checksum: true
