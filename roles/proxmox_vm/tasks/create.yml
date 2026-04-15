@@ -141,7 +141,6 @@
   ansible.builtin.slurp:
     src: "{{ k3s_proxmox_cloudinit_ssh_key_path }}.pub"
   register: _ssh_key_content
-  delegate_to: localhost
   when: not proxmox_vm_dry_run | bool
 
 - name: Configure cloud-init settings

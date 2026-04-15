@@ -4,7 +4,7 @@
 
 namespace: jonty16117
 name: k3s_proxmox
-version: 1.0.2
+version: 1.0.3
 readme: README.md
 authors:
   - Jaswinder Kantiwal
@@ -27,6 +27,8 @@ dependencies:
   community.general: ">=9.0.0"
   community.proxmox: ">=1.0.0"
   ansible.utils: ">=4.0.0"
+  kubernetes.core: ">=6.0.0"
+  ansible.posix: ">=2.0.0"
 repository: https://github.com/Jonty16117/ansible-collection-k3s-proxmox
 documentation: https://github.com/Jonty16117/ansible-collection-k3s-proxmox/blob/main/README.md
 homepage: https://github.com/Jonty16117/ansible-collection-k3s-proxmox
