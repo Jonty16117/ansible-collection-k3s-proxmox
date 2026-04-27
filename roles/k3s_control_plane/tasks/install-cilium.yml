@@ -17,6 +17,11 @@
     path: /usr/bin/cilium
   register: _cilium_cli
 
+- name: Check if Helm is installed
+  ansible.builtin.stat:
+    path: /usr/bin/helm
+  register: _helm_cli
+
 - name: Check CP node count for Cilium upgrade decision
   ansible.builtin.shell: |
     kubectl get nodes --no-headers 2>/dev/null | grep -c "control-plane" || echo "0"
@@ -99,6 +104,40 @@
         executable: /bin/sh
       register: _cilium_upgrade
       changed_when: "'Upgraded' in _cilium_upgrade.stdout or 'Success' in _cilium_upgrade.stdout"
+      failed_when: false
+
+    - name: Upgrade Cilium via Helm (fallback if CLI upgrade fails)
+      when: _cilium_upgrade is failed or _cilium_upgrade.changed == false
+      block:
+        - name: Add Cilium Helm repository
+          ansible.builtin.shell: |
+            helm repo add cilium https://helm.cilium.io 2>/dev/null || true
+            helm repo update
+          args:
+            executable: /bin/sh
+          changed_when: false
+
+        - name: Fix IngressClass Helm ownership (required for Helm upgrade)
+          ansible.builtin.shell: |
+            kubectl label ingressclass cilium app.kubernetes.io/managed-by=Helm --overwrite 2>/dev/null || true
+            kubectl annotate ingressclass cilium meta.helm.sh/release-name=cilium meta.helm.sh/release-namespace={{ k3s_cilium_namespace }} --overwrite 2>/dev/null || true
+          environment:
+            KUBECONFIG: "{{ k3s_control_plane_kubeconfig }}"
+          args:
+            executable: /bin/sh
+          changed_when: false
+
+        - name: Upgrade Cilium via Helm
+          ansible.builtin.shell: |
+            export KUBECONFIG="{{ k3s_control_plane_kubeconfig }}"
+            helm upgrade cilium cilium/cilium \
+              --version {{ k3s_cilium_version }} \
+              --namespace {{ k3s_cilium_namespace }} \
+              --values /tmp/cilium-values-multi-cp.yaml
+          args:
+            executable: /bin/sh
+          register: _helm_upgrade
+          changed_when: "'has been upgraded' in _helm_upgrade.stdout or 'SUCCESS' in _helm_upgrade.stdout"
 
     - name: Wait for Cilium pods after upgrade
       ansible.builtin.command: |
@@ -181,6 +220,23 @@
     - name: Apply CiliumL2AnnouncementPolicy
       ansible.builtin.shell: |
         kubectl apply -f /tmp/cilium-l2announcement-policy.yaml --server-side
+      environment:
+        KUBECONFIG: "{{ k3s_control_plane_kubeconfig }}"
+      changed_when: false
+
+- name: Setup Cilium Ingress Controller RBAC
+  when:
+    - k3s_is_first_node | default(false)
+  block:
+    - name: Render Ingress RBAC manifest
+      ansible.builtin.template:
+        src: cilium-ingress-rbac.yaml.j2
+        dest: /tmp/cilium-ingress-rbac.yaml
+        mode: '0600'
+
+    - name: Apply Cilium Ingress RBAC
+      ansible.builtin.shell: |
+        kubectl apply -f /tmp/cilium-ingress-rbac.yaml
       environment:
         KUBECONFIG: "{{ k3s_control_plane_kubeconfig }}"
       changed_when: false
